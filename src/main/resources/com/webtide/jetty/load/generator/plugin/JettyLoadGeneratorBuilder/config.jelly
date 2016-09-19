@@ -1,0 +1,14 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="${%Host}" field="host">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Port}" field="port">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Users}" field="users">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Profile Xml}" field="profileXml">
+    <f:textarea />
+  </f:entry>
+</j:jelly>
