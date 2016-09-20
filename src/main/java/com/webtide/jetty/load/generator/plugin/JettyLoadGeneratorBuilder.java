@@ -13,20 +13,26 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
-import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Sample {@link Builder}.
@@ -58,19 +64,27 @@ public class JettyLoadGeneratorBuilder
 
     private final int users;
 
+    private final String profileXmlFromFile;
+
+    private final int runningTime;
+
+    private final TimeUnit runningTimeUnit;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public JettyLoadGeneratorBuilder( String profileXml, String host, int port, int users )
+    public JettyLoadGeneratorBuilder( String profileXml, String host, int port, int users, String profileXmlFromFile,
+                                      int runningTime, TimeUnit runningTimeUnit )
     {
-        this.profileXml = Util.fixEmptyAndTrim( profileXml);
+        this.profileXml = Util.fixEmptyAndTrim( profileXml );
         this.host = host;
         this.port = port;
         this.users = users;
+        this.profileXmlFromFile = profileXmlFromFile;
+        this.runningTime = runningTime;
+        this.runningTimeUnit = runningTimeUnit;
+
     }
 
-    /**
-     * We'll use this from the <tt>config.jelly</tt>.
-     */
     public String getProfileXml()
     {
         return profileXml;
@@ -91,12 +105,31 @@ public class JettyLoadGeneratorBuilder
         return users;
     }
 
+    public String getProfileXmlFromFile()
+    {
+        return profileXmlFromFile;
+    }
+
+    public int getRunningTime()
+    {
+        return runningTime;
+    }
+
+    public TimeUnit getRunningTimeUnit()
+    {
+        return runningTimeUnit;
+    }
+
+    public List<TimeUnit> getTimeUnits() {
+        return Arrays.asList(TimeUnit.DAYS, TimeUnit.HOURS, TimeUnit.MINUTES, TimeUnit.MILLISECONDS);
+    }
+
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
         try
         {
-            run();
+            run( listener );
         }
         catch ( Exception e )
         {
@@ -113,7 +146,7 @@ public class JettyLoadGeneratorBuilder
         LOGGER.debug( " simpleBuildStep perform" );
         try
         {
-            run();
+            run( taskListener );
         }
         catch ( Exception e )
         {
@@ -122,29 +155,53 @@ public class JettyLoadGeneratorBuilder
     }
 
 
-    protected void run()
+    protected void run( final TaskListener taskListener )
         throws Exception
     {
-        LOGGER.info( "host: {}, port: {}", getHost(), getPort());
-        LOGGER.info( "profileXml: {}", this.getProfileXml() );
-        ResourceProfile resourceProfile = (ResourceProfile) new XmlConfiguration( this.getProfileXml() ).configure();
+        LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
+        String xml = StringUtils.trim( this.getProfileXml() );
+        LOGGER.info( "profileXml: {}", xml );
+        ResourceProfile resourceProfile = (ResourceProfile) new XmlConfiguration( xml ).configure();
         LOGGER.info( "resourceProfile: {}", resourceProfile );
 
-        /*
+        ResponsePerPath responsePerPath = new ResponsePerPath();
+
         LoadGenerator loadGenerator = new LoadGenerator.Builder() //
-            .host( "localhost" ) //
-            .port( connector.getLocalPort() ) //
-            .users( this.usersNumber ) //
+            .host( getHost() ) //
+            .port( getPort() ) //
+            .users( getUsers() ) //
             .transactionRate( 1 ) //
-            .transport( this.transport ) //
-            .httpClientTransport( this.httpClientTransport() ) //
-            .sslContextFactory( sslContextFactory ) //
-            .loadProfile( profile ) //
-            .responseTimeListeners( responseTimeListeners.toArray( new ResponseTimeListener[responseTimeListeners.size()]) ) //
-            .requestListeners( testRequestListener ) //
+            .transport( LoadGenerator.Transport.HTTP ) //
+            .httpClientTransport( new HttpTransportBuilder().build() ) //
+            //.sslContextFactory( sslContextFactory ) //
+            .loadProfile( resourceProfile ) //
+            .responseTimeListeners( responsePerPath, new ResponseTimeListener()
+            {
+                @Override
+                public void onResponseTimeValue( Values values )
+                {
+                    taskListener.getLogger().println(
+                        "response time " + TimeUnit.NANOSECONDS.toMillis( values.getTime() ) + " ms for path: "
+                            + values.getPath() );
+                }
+
+                @Override
+                public void onLoadGeneratorStop()
+                {
+                    taskListener.getLogger().println( "stop loadGenerator" );
+                }
+            } )
+            //.requestListeners( testRequestListener ) //
             //.executor( new QueuedThreadPool() )
             .build();
-        */
+
+        loadGenerator.run( 1, TimeUnit.MINUTES );
+
+        for ( Map.Entry<String, AtomicLong> entry : responsePerPath.getRecorderPerPath().entrySet() )
+        {
+            LOGGER.info( "responsePerPath: {}", entry );
+        }
+
     }
 
     // overrided for better type safety.
@@ -205,6 +262,42 @@ public class JettyLoadGeneratorBuilder
             return super.configure( req, formData );
         }*/
 
+    }
+
+
+    public static class ResponsePerPath
+        implements ResponseTimeListener
+    {
+
+        private final Map<String, AtomicLong> recorderPerPath = new ConcurrentHashMap<>();
+
+        @Override
+        public void onResponseTimeValue( Values values )
+        {
+            String path = values.getPath();
+            AtomicLong response = recorderPerPath.get( path );
+            if ( response == null )
+            {
+                response = new AtomicLong( 1 );
+                recorderPerPath.put( path, response );
+            }
+            else
+            {
+                response.incrementAndGet();
+            }
+        }
+
+
+        @Override
+        public void onLoadGeneratorStop()
+        {
+
+        }
+
+        public Map<String, AtomicLong> getRecorderPerPath()
+        {
+            return recorderPerPath;
+        }
     }
 }
 
