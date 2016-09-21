@@ -8,7 +8,20 @@
   <f:entry title="${%Users}" field="users">
     <f:textbox/>
   </f:entry>
+  <f:entry title="${%Profile Xml From Path}" field="profileXmlFromFile">
+    <f:textbox/>
+  </f:entry>
   <f:entry title="${%Profile Xml}" field="profileXml">
     <f:textarea />
+  </f:entry>
+  <f:entry title="${%Running Time}" field="runningTime">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Running Time Unit}">
+    <select class="setting-input" name="runningTimeUnit">
+      <j:forEach var="s" items="${descriptor.timeUnits}">
+        <f:option selected="${s==instance.runningTimeUnit}">${s}</f:option>
+      </j:forEach>
+    </select>
   </f:entry>
 </j:jelly>

@@ -13,6 +13,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
+import org.HdrHistogram.Recorder;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
@@ -32,22 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Sample {@link Builder}.
- * <p>
- * <p>
- * When the user configures the project and enables this builder,
- * {@link DescriptorImpl\#newInstance(StaplerRequest)} is invoked
- * and a new {@link JettyLoadGeneratorBuilder} is created. The created
- * instance is persisted to the project configuration XML by using
- * XStream, so this allows you to use instance fields (like {@link \#name})
- * to remember the configuration.
- * <p>
- * <p>
- * When a build is performed, the {@link \#perform(AbstractBuild, Launcher, BuildListener)} method
- * will be invoked.
+ *
  */
 public class JettyLoadGeneratorBuilder
     extends Builder
@@ -120,16 +110,12 @@ public class JettyLoadGeneratorBuilder
         return runningTimeUnit;
     }
 
-    public List<TimeUnit> getTimeUnits() {
-        return Arrays.asList(TimeUnit.DAYS, TimeUnit.HOURS, TimeUnit.MINUTES, TimeUnit.MILLISECONDS);
-    }
-
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
         try
         {
-            run( listener );
+            run( listener, build.getWorkspace() );
         }
         catch ( Exception e )
         {
@@ -137,6 +123,7 @@ public class JettyLoadGeneratorBuilder
         }
         return true;
     }
+
 
     @Override
     public void perform( @Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher,
@@ -146,7 +133,7 @@ public class JettyLoadGeneratorBuilder
         LOGGER.debug( " simpleBuildStep perform" );
         try
         {
-            run( taskListener );
+            run( taskListener, filePath );
         }
         catch ( Exception e )
         {
@@ -155,11 +142,21 @@ public class JettyLoadGeneratorBuilder
     }
 
 
-    protected void run( final TaskListener taskListener )
+    protected void run( final TaskListener taskListener, final FilePath filePath )
         throws Exception
     {
         LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
+
         String xml = StringUtils.trim( this.getProfileXml() );
+
+        String profileXmlPath = getProfileXmlFromFile();
+
+        if ( StringUtils.isNotBlank( profileXmlPath ) )
+        {
+            FilePath profileXmlFilePath = filePath.child( profileXmlPath );
+            xml = IOUtils.toString( profileXmlFilePath.read() );
+        }
+
         LOGGER.info( "profileXml: {}", xml );
         ResourceProfile resourceProfile = (ResourceProfile) new XmlConfiguration( xml ).configure();
         LOGGER.info( "resourceProfile: {}", resourceProfile );
@@ -197,9 +194,14 @@ public class JettyLoadGeneratorBuilder
 
         loadGenerator.run( 1, TimeUnit.MINUTES );
 
-        for ( Map.Entry<String, AtomicLong> entry : responsePerPath.getRecorderPerPath().entrySet() )
+        for ( Map.Entry<String, Recorder> entry : responsePerPath.getRecorderPerPath().entrySet() )
         {
-            LOGGER.info( "responsePerPath: {}", entry );
+            AtomicInteger number = responsePerPath.responseNumberPerPath.get( entry.getKey() );
+            LOGGER.info( "responsePerPath: {} - {}ms - number: {}", //
+                         entry.getKey(), //
+                         TimeUnit.NANOSECONDS.toMillis(
+                             Math.round( entry.getValue().getIntervalHistogram().getMean() ) ), //
+                         number.get() );
         }
 
     }
@@ -226,16 +228,60 @@ public class JettyLoadGeneratorBuilder
         extends BuildStepDescriptor<Builder>
     {
 
-        /**
-         * Performs on-the-fly validation of the form field 'name'.
-         *
-         * @param value This parameter receives the value that the user has typed.
-         * @return Indicates the outcome of the validation. This is sent to the browser.
-         */
-        public FormValidation doCheckProfileXml( @QueryParameter String value )
+        public FormValidation doCheckPort( @QueryParameter String value )
             throws IOException, ServletException
         {
-            // TODO some validation here
+            try
+            {
+                int port = Integer.parseInt( value );
+                if ( port < 1 )
+                {
+                    return FormValidation.error( "port must be a positive number" );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                return FormValidation.error( "port must be number" );
+            }
+
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckUsers( @QueryParameter String value )
+            throws IOException, ServletException
+        {
+            try
+            {
+                int port = Integer.parseInt( value );
+                if ( port < 1 )
+                {
+                    return FormValidation.error( "users must be a positive number" );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                return FormValidation.error( "users must be number" );
+            }
+
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckRunningTime( @QueryParameter String value )
+            throws IOException, ServletException
+        {
+            try
+            {
+                int port = Integer.parseInt( value );
+                if ( port < 1 )
+                {
+                    return FormValidation.error( "running time must be a positive number" );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                return FormValidation.error( "running time must be number" );
+            }
+
             return FormValidation.ok();
         }
 
@@ -251,6 +297,15 @@ public class JettyLoadGeneratorBuilder
         public String getDisplayName()
         {
             return "Jetty LoadGenerator";
+        }
+
+        public List<TimeUnit> getTimeUnits()
+        {
+            return Arrays.asList( TimeUnit.DAYS, //
+                                  TimeUnit.HOURS, //
+                                  TimeUnit.MINUTES, //
+                                  TimeUnit.SECONDS, //
+                                  TimeUnit.MILLISECONDS );
         }
 
         /*
@@ -269,22 +324,36 @@ public class JettyLoadGeneratorBuilder
         implements ResponseTimeListener
     {
 
-        private final Map<String, AtomicLong> recorderPerPath = new ConcurrentHashMap<>();
+        private final Map<String, Recorder> recorderPerPath = new ConcurrentHashMap<>();
+
+        private final Map<String, AtomicInteger> responseNumberPerPath = new ConcurrentHashMap<>();
 
         @Override
         public void onResponseTimeValue( Values values )
         {
             String path = values.getPath();
-            AtomicLong response = recorderPerPath.get( path );
-            if ( response == null )
+            Recorder recorder = recorderPerPath.get( path );
+            if ( recorder == null )
             {
-                response = new AtomicLong( 1 );
-                recorderPerPath.put( path, response );
+                recorder = new Recorder( TimeUnit.MICROSECONDS.toNanos( 1 ), //
+                                         TimeUnit.MINUTES.toNanos( 1 ), //
+                                         3 );
+                recorderPerPath.put( path, recorder );
+            }
+            recorder.recordValue( values.getTime() );
+
+            AtomicInteger number = responseNumberPerPath.get( path );
+            if ( number == null )
+            {
+                number = new AtomicInteger( 1 );
+                responseNumberPerPath.put( path, number );
             }
             else
             {
-                response.incrementAndGet();
+                number.incrementAndGet();
             }
+
+
         }
 
 
@@ -294,7 +363,7 @@ public class JettyLoadGeneratorBuilder
 
         }
 
-        public Map<String, AtomicLong> getRecorderPerPath()
+        public Map<String, Recorder> getRecorderPerPath()
         {
             return recorderPerPath;
         }
