@@ -1,5 +1,7 @@
 package com.webtide.jetty.load.generator.plugin;
 
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -16,6 +18,8 @@ import jenkins.tasks.SimpleBuildStep;
 import org.HdrHistogram.Recorder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
@@ -29,10 +33,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,7 +50,7 @@ public class JettyLoadGeneratorBuilder
 
     private static final Logger LOGGER = LoggerFactory.getLogger( JettyLoadGeneratorBuilder.class );
 
-    private final String profileXml;
+    private final String profileGroovy;
 
     private final String host;
 
@@ -60,24 +64,28 @@ public class JettyLoadGeneratorBuilder
 
     private final TimeUnit runningTimeUnit;
 
+    private final int runIteration;
+
+    private List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public JettyLoadGeneratorBuilder( String profileXml, String host, int port, int users, String profileXmlFromFile,
-                                      int runningTime, TimeUnit runningTimeUnit )
+    public JettyLoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
+                                      int runningTime, TimeUnit runningTimeUnit, int runIteration )
     {
-        this.profileXml = Util.fixEmptyAndTrim( profileXml );
+        this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
         this.port = port;
         this.users = users;
         this.profileXmlFromFile = profileXmlFromFile;
-        this.runningTime = runningTime;
-        this.runningTimeUnit = runningTimeUnit;
-
+        this.runningTime = runningTime < 1 ? 30 : runningTime;
+        this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
+        this.runIteration = runIteration;
     }
 
-    public String getProfileXml()
+    public String getProfileGroovy()
     {
-        return profileXml;
+        return profileGroovy;
     }
 
     public String getHost()
@@ -108,6 +116,16 @@ public class JettyLoadGeneratorBuilder
     public TimeUnit getRunningTimeUnit()
     {
         return runningTimeUnit;
+    }
+
+    public int getRunIteration()
+    {
+        return runIteration;
+    }
+
+    public void addResponseTimeListener( ResponseTimeListener responseTimeListener )
+    {
+        this.responseTimeListeners.add( responseTimeListener );
     }
 
     @Override
@@ -147,21 +165,67 @@ public class JettyLoadGeneratorBuilder
     {
         LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
 
-        String xml = StringUtils.trim( this.getProfileXml() );
+        ResourceProfile resourceProfile = null;
 
-        String profileXmlPath = getProfileXmlFromFile();
+        String groovy = StringUtils.trim( this.getProfileGroovy() );
 
-        if ( StringUtils.isNotBlank( profileXmlPath ) )
+        if ( StringUtils.isNotBlank( groovy ) )
         {
-            FilePath profileXmlFilePath = filePath.child( profileXmlPath );
-            xml = IOUtils.toString( profileXmlFilePath.read() );
+            CompilerConfiguration compilerConfiguration = new CompilerConfiguration( CompilerConfiguration.DEFAULT );
+            compilerConfiguration.setDebug( true );
+            compilerConfiguration.setVerbose( true );
+
+            compilerConfiguration.addCompilationCustomizers(
+                new ImportCustomizer().addStarImports( "org.eclipse.jetty.load.generator.profile" ) );
+
+            GroovyShell interpreter = new GroovyShell( ResourceProfile.class.getClassLoader(), //
+                                                       new Binding(), //
+                                                       compilerConfiguration );
+
+            resourceProfile = (ResourceProfile) interpreter.evaluate( groovy );
+        }
+        else
+        {
+
+            String profileXmlPath = getProfileXmlFromFile();
+
+            if ( StringUtils.isNotBlank( profileXmlPath ) )
+            {
+                FilePath profileXmlFilePath = filePath.child( profileXmlPath );
+                String xml = IOUtils.toString( profileXmlFilePath.read() );
+                LOGGER.debug( "profileXml: {}", xml );
+                resourceProfile = (ResourceProfile) new XmlConfiguration( xml ).configure();
+            }
         }
 
-        LOGGER.info( "profileXml: {}", xml );
-        ResourceProfile resourceProfile = (ResourceProfile) new XmlConfiguration( xml ).configure();
         LOGGER.info( "resourceProfile: {}", resourceProfile );
 
         ResponsePerPath responsePerPath = new ResponsePerPath();
+
+        List<ResponseTimeListener> listeners = new ArrayList<>( );
+        if (this.responseTimeListeners != null) {
+            listeners.addAll( this.responseTimeListeners );
+        }
+        listeners.add( responsePerPath );
+
+
+        // TODO remove that one which is for debug purpose
+        listeners.add( new ResponseTimeListener()
+        {
+            @Override
+            public void onResponseTimeValue( Values values )
+            {
+                taskListener.getLogger().println(
+                    "response time " + TimeUnit.NANOSECONDS.toMillis( values.getTime() ) + " ms for path: "
+                        + values.getPath() );
+            }
+
+            @Override
+            public void onLoadGeneratorStop()
+            {
+                taskListener.getLogger().println( "stop loadGenerator" );
+            }
+        } );
 
         LoadGenerator loadGenerator = new LoadGenerator.Builder() //
             .host( getHost() ) //
@@ -172,31 +236,21 @@ public class JettyLoadGeneratorBuilder
             .httpClientTransport( new HttpTransportBuilder().build() ) //
             //.sslContextFactory( sslContextFactory ) //
             .loadProfile( resourceProfile ) //
-            .responseTimeListeners( responsePerPath, new ResponseTimeListener()
-            {
-                @Override
-                public void onResponseTimeValue( Values values )
-                {
-                    taskListener.getLogger().println(
-                        "response time " + TimeUnit.NANOSECONDS.toMillis( values.getTime() ) + " ms for path: "
-                            + values.getPath() );
-                }
-
-                @Override
-                public void onLoadGeneratorStop()
-                {
-                    taskListener.getLogger().println( "stop loadGenerator" );
-                }
-            } )
+            .responseTimeListeners( listeners.toArray( new ResponseTimeListener[listeners.size()] ) ) //
             //.requestListeners( testRequestListener ) //
             //.executor( new QueuedThreadPool() )
             .build();
 
-        loadGenerator.run( 1, TimeUnit.MINUTES );
+        if (runIteration > 0) {
+            loadGenerator.run( runIteration );
+        } else {
+
+            loadGenerator.run( runningTime, runningTimeUnit );
+        }
 
         for ( Map.Entry<String, Recorder> entry : responsePerPath.getRecorderPerPath().entrySet() )
         {
-            AtomicInteger number = responsePerPath.responseNumberPerPath.get( entry.getKey() );
+            AtomicInteger number = responsePerPath.getResponseNumberPerPath().get( entry.getKey() );
             LOGGER.info( "responsePerPath: {} - {}ms - number: {}", //
                          entry.getKey(), //
                          TimeUnit.NANOSECONDS.toMillis(
@@ -227,6 +281,25 @@ public class JettyLoadGeneratorBuilder
     public static final class DescriptorImpl
         extends BuildStepDescriptor<Builder>
     {
+
+        private static final List<TimeUnit> TIME_UNITS = Arrays.asList( TimeUnit.DAYS, //
+                                                                        TimeUnit.HOURS, //
+                                                                        TimeUnit.MINUTES, //
+                                                                        TimeUnit.SECONDS, //
+                                                                        TimeUnit.MILLISECONDS );
+
+        /**
+         * This human readable name is used in the configuration screen.
+         */
+        public String getDisplayName()
+        {
+            return "Jetty LoadGenerator";
+        }
+
+        public List<TimeUnit> getTimeUnits()
+        {
+            return TIME_UNITS;
+        }
 
         public FormValidation doCheckPort( @QueryParameter String value )
             throws IOException, ServletException
@@ -291,23 +364,6 @@ public class JettyLoadGeneratorBuilder
             return true;
         }
 
-        /**
-         * This human readable name is used in the configuration screen.
-         */
-        public String getDisplayName()
-        {
-            return "Jetty LoadGenerator";
-        }
-
-        public List<TimeUnit> getTimeUnits()
-        {
-            return Arrays.asList( TimeUnit.DAYS, //
-                                  TimeUnit.HOURS, //
-                                  TimeUnit.MINUTES, //
-                                  TimeUnit.SECONDS, //
-                                  TimeUnit.MILLISECONDS );
-        }
-
         /*
         @Override
         public boolean configure( StaplerRequest req, JSONObject formData )
@@ -319,54 +375,5 @@ public class JettyLoadGeneratorBuilder
 
     }
 
-
-    public static class ResponsePerPath
-        implements ResponseTimeListener
-    {
-
-        private final Map<String, Recorder> recorderPerPath = new ConcurrentHashMap<>();
-
-        private final Map<String, AtomicInteger> responseNumberPerPath = new ConcurrentHashMap<>();
-
-        @Override
-        public void onResponseTimeValue( Values values )
-        {
-            String path = values.getPath();
-            Recorder recorder = recorderPerPath.get( path );
-            if ( recorder == null )
-            {
-                recorder = new Recorder( TimeUnit.MICROSECONDS.toNanos( 1 ), //
-                                         TimeUnit.MINUTES.toNanos( 1 ), //
-                                         3 );
-                recorderPerPath.put( path, recorder );
-            }
-            recorder.recordValue( values.getTime() );
-
-            AtomicInteger number = responseNumberPerPath.get( path );
-            if ( number == null )
-            {
-                number = new AtomicInteger( 1 );
-                responseNumberPerPath.put( path, number );
-            }
-            else
-            {
-                number.incrementAndGet();
-            }
-
-
-        }
-
-
-        @Override
-        public void onLoadGeneratorStop()
-        {
-
-        }
-
-        public Map<String, Recorder> getRecorderPerPath()
-        {
-            return recorderPerPath;
-        }
-    }
 }
 

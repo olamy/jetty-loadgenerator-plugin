@@ -1,3 +1,4 @@
+<?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
   <f:entry title="${%Host}" field="host">
     <f:textbox/>
@@ -11,7 +12,7 @@
   <f:entry title="${%Profile Xml From Path}" field="profileXmlFromFile">
     <f:textbox/>
   </f:entry>
-  <f:entry title="${%Profile Xml}" field="profileXml">
+  <f:entry title="${%Profile Groovy}" field="profileGroovy">
     <f:textarea />
   </f:entry>
   <f:entry title="${%Running Time}" field="runningTime">
@@ -23,5 +24,8 @@
         <f:option selected="${s==instance.runningTimeUnit}">${s}</f:option>
       </j:forEach>
     </select>
+  </f:entry>
+  <f:entry title="${%Running Iteration}" field="runIteration">
+    <f:textbox />
   </f:entry>
 </j:jelly>

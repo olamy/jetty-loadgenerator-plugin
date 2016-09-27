@@ -73,6 +73,7 @@
           <groupId>org.jenkins-ci.tools</groupId>
           <artifactId>maven-hpi-plugin</artifactId>
           <configuration>
+            <disabledTestInjection>true</disabledTestInjection>
             <systemProperties>
               <JENKINS_HOME>${project.basedir}/.work</JENKINS_HOME>
             </systemProperties>
