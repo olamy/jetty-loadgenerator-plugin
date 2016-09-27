@@ -102,7 +102,7 @@ public class JettyLoadGeneratorBuilderTest
         JettyLoadGeneratorBuilder jettyLoadGeneratorBuilder =
             new JettyLoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
                                            1, "", 20, TimeUnit.SECONDS, //
-                                           iteration );
+                                           iteration, 1 );
 
         ResponsePerPath responsePerPath = new ResponsePerPath();
 

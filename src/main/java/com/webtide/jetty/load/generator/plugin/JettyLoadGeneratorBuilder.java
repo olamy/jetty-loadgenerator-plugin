@@ -83,12 +83,14 @@ public class JettyLoadGeneratorBuilder
 
     private final int runIteration;
 
+    private final int transactionRate;
+
     private List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public JettyLoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
-                                      int runningTime, TimeUnit runningTimeUnit, int runIteration )
+                                      int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -98,6 +100,7 @@ public class JettyLoadGeneratorBuilder
         this.runningTime = runningTime < 1 ? 30 : runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
+        this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
     }
 
     public String getProfileGroovy()
@@ -143,6 +146,11 @@ public class JettyLoadGeneratorBuilder
     public void addResponseTimeListener( ResponseTimeListener responseTimeListener )
     {
         this.responseTimeListeners.add( responseTimeListener );
+    }
+
+    public int getTransactionRate()
+    {
+        return transactionRate;
     }
 
     @Override
@@ -248,7 +256,7 @@ public class JettyLoadGeneratorBuilder
             .host( getHost() ) //
             .port( getPort() ) //
             .users( getUsers() ) //
-            .transactionRate( 1 ) //
+            .transactionRate( getTransactionRate() ) //
             .transport( LoadGenerator.Transport.HTTP ) //
             .httpClientTransport( new HttpTransportBuilder().build() ) //
             //.sslContextFactory( sslContextFactory ) //
@@ -277,9 +285,6 @@ public class JettyLoadGeneratorBuilder
 
     }
 
-    // overrided for better type safety.
-    // if your plugin doesn't really define any property on Descriptor,
-    // you don't have to do this.
     @Override
     public DescriptorImpl getDescriptor()
     {
@@ -288,13 +293,10 @@ public class JettyLoadGeneratorBuilder
 
     /**
      * Descriptor for {@link JettyLoadGeneratorBuilder}. Used as a singleton.
-     * The class is marked as public so that it can be accessed from views.
-     * <p>
-     * <p>
      * See <tt>views/hudson/plugins/hello_world/JettyLoadGeneratorBuilder/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
-    @Extension // this marker indicates Hudson that this is an implementation of an extension point.
+    @Extension
     public static final class DescriptorImpl
         extends BuildStepDescriptor<Builder>
     {
@@ -361,8 +363,8 @@ public class JettyLoadGeneratorBuilder
         {
             try
             {
-                int port = Integer.parseInt( value );
-                if ( port < 1 )
+                int runningTime = Integer.parseInt( value );
+                if ( runningTime < 1 )
                 {
                     return FormValidation.error( "running time must be a positive number" );
                 }
@@ -370,6 +372,25 @@ public class JettyLoadGeneratorBuilder
             catch ( NumberFormatException e )
             {
                 return FormValidation.error( "running time must be number" );
+            }
+
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckTransactionRate( @QueryParameter String value )
+            throws IOException, ServletException
+        {
+            try
+            {
+                int transactionRate = Integer.parseInt( value );
+                if ( transactionRate <= 0 )
+                {
+                    return FormValidation.error( "transactionRate must be a positive number" );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                return FormValidation.error( "transactionRate time must be number" );
             }
 
             return FormValidation.ok();

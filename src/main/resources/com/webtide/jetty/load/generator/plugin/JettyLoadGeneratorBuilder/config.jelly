@@ -6,6 +6,9 @@
   <f:entry title="${%Port}" field="port">
     <f:textbox/>
   </f:entry>
+  <f:entry title="${%Transaction Rate}" field="transactionRate">
+    <f:textbox/>
+  </f:entry>
   <f:entry title="${%Users}" field="users">
     <f:textbox/>
   </f:entry>
