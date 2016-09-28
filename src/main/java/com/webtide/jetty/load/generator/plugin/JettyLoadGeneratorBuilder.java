@@ -34,14 +34,18 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
+import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
+import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
+import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
@@ -53,7 +57,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -68,6 +74,10 @@ public class JettyLoadGeneratorBuilder
     extends Builder
     implements SimpleBuildStep
 {
+
+    public static final String REPORT_DIRECTORY_NAME = "load-generator-reports";
+
+    public static final String SUMMARY_REPORT_FILE = "summaryReport.json";
 
     private static final Logger LOGGER = LoggerFactory.getLogger( JettyLoadGeneratorBuilder.class );
 
@@ -275,17 +285,32 @@ public class JettyLoadGeneratorBuilder
             loadGenerator.run( runningTime, runningTimeUnit );
         }
 
+        SummaryReport summaryReport = new SummaryReport();
+
         for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getRecorderPerPath().entrySet() )
         {
-            AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( entry.getKey() );
-            LOGGER.info( "responseTimePerPath: {} - {}ms - number: {}", //
-                         entry.getKey(), //
-                         TimeUnit.NANOSECONDS.toMillis(
-                             Math.round( entry.getValue().getIntervalHistogram().getMean() ) ), //
+            String path = entry.getKey();
+            Histogram histogram = entry.getValue().getIntervalHistogram();
+            AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
+            LOGGER.info( "responseTimePerPath: {} - mean: {}ms - number: {}", //
+                         path, //
+                         TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                          number.get() );
+            summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
+
+        File rootDir = run.getRootDir();
+
+        File reportDirectory = new File( rootDir, REPORT_DIRECTORY_NAME );
+        reportDirectory.mkdirs();
+
+        objectMapper.writeValue( new File( reportDirectory, SUMMARY_REPORT_FILE ), summaryReport );
+
+        LOGGER.debug( "end" );
+
+        //objectMapper.writer().writeValue(  );
 
         //filePath.
 

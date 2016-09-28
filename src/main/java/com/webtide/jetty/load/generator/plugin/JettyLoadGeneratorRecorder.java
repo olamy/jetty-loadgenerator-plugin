@@ -17,6 +17,7 @@
 
 package com.webtide.jetty.load.generator.plugin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -26,16 +27,18 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
  * Created by olamy on 21/09/2016.
  */
-public class JettyLoadGeneratorRecorder extends Recorder
+public class JettyLoadGeneratorRecorder extends Recorder // implements HealthReportingAction
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JettyLoadGeneratorRecorder.class );
 
@@ -48,9 +51,19 @@ public class JettyLoadGeneratorRecorder extends Recorder
     public boolean perform( AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener )
         throws InterruptedException, IOException
     {
-        LOGGER.info( "perform " );
+        File reportDirectory = new File(build.getRootDir(), JettyLoadGeneratorBuilder.REPORT_DIRECTORY_NAME);
+        File summaryReportFile = new File( reportDirectory, JettyLoadGeneratorBuilder.SUMMARY_REPORT_FILE );
+
+        ObjectMapper objectMapper = new ObjectMapper(  );
+
+        SummaryReport summaryReport = objectMapper.readValue( summaryReportFile, SummaryReport.class );
+
         return true;
     }
+
+
+
+
 
     @Override
     public BuildStepMonitor getRequiredMonitorService()
