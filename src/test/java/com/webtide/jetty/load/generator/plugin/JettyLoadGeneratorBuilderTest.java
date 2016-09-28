@@ -104,17 +104,17 @@ public class JettyLoadGeneratorBuilderTest
                                            1, "", 20, TimeUnit.SECONDS, //
                                            iteration, 1 );
 
-        ResponsePerPath responsePerPath = new ResponsePerPath();
+        ResponseTimePerPath responseTimePerPath = new ResponseTimePerPath();
 
-        jettyLoadGeneratorBuilder.addResponseTimeListener( responsePerPath );
+        jettyLoadGeneratorBuilder.addResponseTimeListener( responseTimePerPath );
 
         project.getBuildersList().add( jettyLoadGeneratorBuilder );
 
         FreeStyleBuild build = project.scheduleBuild2( 0 ).get();
 
-        Assert.assertEquals( 12, responsePerPath.getResponseNumberPerPath().size() );
+        Assert.assertEquals( 12, responseTimePerPath.getResponseNumberPerPath().size() );
 
-        for ( Map.Entry<String, AtomicInteger> entry : responsePerPath.getResponseNumberPerPath().entrySet() )
+        for ( Map.Entry<String, AtomicInteger> entry : responseTimePerPath.getResponseNumberPerPath().entrySet() )
         {
             Assert.assertEquals( "not " + iteration + " but " + entry.getValue().get() + " for path " + entry.getKey(),
                                  //
