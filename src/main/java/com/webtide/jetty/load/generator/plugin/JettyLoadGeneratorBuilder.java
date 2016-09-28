@@ -44,7 +44,7 @@ import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPath;
+import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -217,7 +217,7 @@ public class JettyLoadGeneratorBuilder
             return;
         }
 
-        ResponseTimePerPath responseTimePerPath = new ResponseTimePerPath();
+        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener();
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
         List<ResponseTimeListener> listeners = new ArrayList<>();

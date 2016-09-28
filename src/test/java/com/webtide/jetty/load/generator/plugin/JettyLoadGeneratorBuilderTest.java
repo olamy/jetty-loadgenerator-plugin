@@ -20,6 +20,8 @@ package com.webtide.jetty.load.generator.plugin;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
+import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -104,17 +106,17 @@ public class JettyLoadGeneratorBuilderTest
                                            1, "", 20, TimeUnit.SECONDS, //
                                            iteration, 1 );
 
-        ResponseTimePerPath responseTimePerPath = new ResponseTimePerPath();
+        ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
-        jettyLoadGeneratorBuilder.addResponseTimeListener( responseTimePerPath );
+        jettyLoadGeneratorBuilder.addResponseTimeListener( responseNumberPerPath );
 
         project.getBuildersList().add( jettyLoadGeneratorBuilder );
 
         FreeStyleBuild build = project.scheduleBuild2( 0 ).get();
 
-        Assert.assertEquals( 12, responseTimePerPath.getResponseNumberPerPath().size() );
+        Assert.assertEquals( 12, responseNumberPerPath.getResponseNumberPerPath().size() );
 
-        for ( Map.Entry<String, AtomicInteger> entry : responseTimePerPath.getResponseNumberPerPath().entrySet() )
+        for ( Map.Entry<String, AtomicInteger> entry : responseNumberPerPath.getResponseNumberPerPath().entrySet() )
         {
             Assert.assertEquals( "not " + iteration + " but " + entry.getValue().get() + " for path " + entry.getKey(),
                                  //
