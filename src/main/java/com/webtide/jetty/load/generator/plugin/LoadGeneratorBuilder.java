@@ -217,19 +217,18 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-        LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
-
         ResourceProfile resourceProfile =
             this.loadProfile == null ? loadResourceProfile( workspace ) : this.loadProfile;
 
         if ( resourceProfile == null )
         {
+            taskListener.getLogger().print( "resource profile must be set, Build ABORTED" );
             LOGGER.error( "resource profile must be set, Build ABORTED" );
             run.setResult( Result.ABORTED );
             return;
         }
 
-        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener();
+        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener(false);
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
         GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
 
@@ -281,13 +280,17 @@ public class LoadGeneratorBuilder
 
         if ( runIteration > 0 )
         {
+            taskListener.getLogger().print( "starting " + runIteration + " iterations, load generator to host " + host + " with port " + port );
             loadGenerator.run( runIteration );
+            LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
         }
         else
         {
-
+            taskListener.getLogger().print( "starting for " + runningTime + " " + runningTimeUnit.toString() + " iterations, load generator to host " + host + " with port " + port );
             loadGenerator.run( runningTime, runningTimeUnit );
         }
+
+        taskListener.getLogger().print( "load generator stopped, enjoy your results!!" );
 
         SummaryReport summaryReport = new SummaryReport();
 
@@ -296,13 +299,15 @@ public class LoadGeneratorBuilder
             String path = entry.getKey();
             Histogram histogram = entry.getValue().getIntervalHistogram();
             AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
-            LOGGER.info( "responseTimePerPath: {} - mean: {}ms - number: {}", //
+            LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
                          path, //
                          TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                          number.get() );
             summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
         }
 
+        /*
+        writing files may be more usefull with maven plugins (using a recorder
         ObjectMapper objectMapper = new ObjectMapper();
 
         File rootDir = run.getRootDir();
@@ -312,7 +317,7 @@ public class LoadGeneratorBuilder
 
         objectMapper.writeValue( new File( reportDirectory, SUMMARY_REPORT_FILE ), summaryReport );
 
-        LOGGER.debug( "end" );
+        */
 
         // TODO calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
@@ -320,10 +325,8 @@ public class LoadGeneratorBuilder
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations( globalSummaryReportListener.getHistogram())) );
-        //objectMapper.writer().writeValue(  );
 
-        //filePath.
-
+        LOGGER.debug( "end" );
     }
 
 
