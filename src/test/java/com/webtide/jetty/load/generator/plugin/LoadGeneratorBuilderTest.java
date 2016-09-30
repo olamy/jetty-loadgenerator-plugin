@@ -21,7 +21,6 @@ import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -55,7 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by olamy on 27/9/16.
  */
-public class JettyLoadGeneratorBuilderTest
+public class LoadGeneratorBuilderTest
 {
     @Rule
     public JenkinsRule j = new JenkinsRule();
@@ -101,16 +100,16 @@ public class JettyLoadGeneratorBuilderTest
 
         int iteration = 2;
 
-        JettyLoadGeneratorBuilder jettyLoadGeneratorBuilder =
-            new JettyLoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
-                                           1, "", 20, TimeUnit.SECONDS, //
-                                           iteration, 1 );
+        LoadGeneratorBuilder loadGeneratorBuilder =
+            new LoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
+                                      1, "", 20, TimeUnit.SECONDS, //
+                                      iteration, 1 );
 
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
-        jettyLoadGeneratorBuilder.addResponseTimeListener( responseNumberPerPath );
+        loadGeneratorBuilder.addResponseTimeListener( responseNumberPerPath );
 
-        project.getBuildersList().add( jettyLoadGeneratorBuilder );
+        project.getBuildersList().add( loadGeneratorBuilder );
 
         FreeStyleBuild build = project.scheduleBuild2( 0 ).get();
 

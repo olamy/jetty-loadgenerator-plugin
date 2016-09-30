@@ -22,7 +22,9 @@ import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Action;
 import hudson.model.BuildListener;
+import hudson.model.HealthReport;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
@@ -32,18 +34,21 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Created by olamy on 21/09/2016.
  */
-public class JettyLoadGeneratorRecorder extends Recorder // implements HealthReportingAction
+public class LoadGeneratorRecorder
+    extends Recorder // implements HealthReportingAction
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( JettyLoadGeneratorRecorder.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorRecorder.class );
 
     @DataBoundConstructor
-    public JettyLoadGeneratorRecorder()
+    public LoadGeneratorRecorder()
     {
     }
 
@@ -51,19 +56,30 @@ public class JettyLoadGeneratorRecorder extends Recorder // implements HealthRep
     public boolean perform( AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener )
         throws InterruptedException, IOException
     {
-        File reportDirectory = new File(build.getRootDir(), JettyLoadGeneratorBuilder.REPORT_DIRECTORY_NAME);
-        File summaryReportFile = new File( reportDirectory, JettyLoadGeneratorBuilder.SUMMARY_REPORT_FILE );
+        // FIXME use that maybe in case of a maven plugin generating files??
+        /*
+        File reportDirectory = new File( build.getRootDir(), LoadGeneratorBuilder.REPORT_DIRECTORY_NAME);
+        File summaryReportFile = new File( reportDirectory, LoadGeneratorBuilder.SUMMARY_REPORT_FILE );
 
         ObjectMapper objectMapper = new ObjectMapper(  );
 
         SummaryReport summaryReport = objectMapper.readValue( summaryReportFile, SummaryReport.class );
 
+        // TODO calculate score from previous build
+        HealthReport healthReport = new HealthReport( 30, "text" );
+
+        build.addAction( new LoadGeneratorBuildAction( healthReport, summaryReport) );
+
+        */
         return true;
     }
 
 
-
-
+    @Override
+    public Action getProjectAction( AbstractProject<?, ?> project )
+    {
+        return new LoadGeneratorProjectAction( project );
+    }
 
     @Override
     public BuildStepMonitor getRequiredMonitorService()
@@ -87,7 +103,7 @@ public class JettyLoadGeneratorRecorder extends Recorder // implements HealthRep
          */
         DescriptorImpl()
         {
-            super( JettyLoadGeneratorRecorder.class );
+            super( LoadGeneratorRecorder.class );
         }
 
         @Override

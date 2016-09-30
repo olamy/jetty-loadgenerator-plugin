@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:st="jelly:stapler">
+    <t:summary icon="clipboard.png">
+        <p>Total requests: ${it.globalCollectorInformations.totalCount} ms</p>
+        <p>Minimum responseTime: ${it.globalCollectorInformations.minValue} ms</p>
+        <p>Maximum responseTime: ${it.globalCollectorInformations.maxValue} ms</p>
+        <p>50 percentile responseTime: ${it.globalCollectorInformations.value50} ms</p>
+        <p>90 percentile responseTime: ${it.globalCollectorInformations.value90} ms</p>
+    </t:summary>
+
+</j:jelly>

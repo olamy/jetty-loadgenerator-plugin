@@ -27,6 +27,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.HealthReport;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -36,7 +37,6 @@ import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -45,6 +45,7 @@ import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
+import org.eclipse.jetty.load.generator.report.GlobalSummaryReportListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
@@ -59,7 +60,6 @@ import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -70,7 +70,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  *
  */
-public class JettyLoadGeneratorBuilder
+public class LoadGeneratorBuilder
     extends Builder
     implements SimpleBuildStep
 {
@@ -79,7 +79,9 @@ public class JettyLoadGeneratorBuilder
 
     public static final String SUMMARY_REPORT_FILE = "summaryReport.json";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( JettyLoadGeneratorBuilder.class );
+    public static final String GLOBAL_SUMMARY_REPORT_FILE = "globalSummaryReport.json";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuilder.class );
 
     private final String profileGroovy;
 
@@ -105,8 +107,8 @@ public class JettyLoadGeneratorBuilder
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public JettyLoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
-                                      int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate )
+    public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
+                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -229,6 +231,7 @@ public class JettyLoadGeneratorBuilder
 
         ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener();
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
+        GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
 
         List<ResponseTimeListener> listeners = new ArrayList<>();
         if ( this.responseTimeListeners != null )
@@ -237,6 +240,7 @@ public class JettyLoadGeneratorBuilder
         }
         listeners.add( responseTimePerPath );
         listeners.add( responseNumberPerPath );
+        listeners.add( globalSummaryReportListener );
 
         // TODO remove that one which is for debug purpose
         if ( LOGGER.isDebugEnabled() )
@@ -310,6 +314,12 @@ public class JettyLoadGeneratorBuilder
 
         LOGGER.debug( "end" );
 
+        // TODO calculate score from previous build
+        HealthReport healthReport = new HealthReport( 30, "text" );
+
+        run.addAction( new LoadGeneratorBuildAction( healthReport, //
+                                                     summaryReport, //
+                                                     new CollectorInformations( globalSummaryReportListener.getHistogram())) );
         //objectMapper.writer().writeValue(  );
 
         //filePath.
@@ -365,8 +375,8 @@ public class JettyLoadGeneratorBuilder
     }
 
     /**
-     * Descriptor for {@link JettyLoadGeneratorBuilder}. Used as a singleton.
-     * See <tt>views/hudson/plugins/hello_world/JettyLoadGeneratorBuilder/*.jelly</tt>
+     * Descriptor for {@link LoadGeneratorBuilder}. Used as a singleton.
+     * See <tt>views/hudson/plugins/hello_world/LoadGeneratorBuilder/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension

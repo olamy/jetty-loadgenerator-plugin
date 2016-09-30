@@ -1,3 +1,8 @@
 <div>
-
+  <p>
+  This plugin can run some load testing HTTP/1.1 or HTTP2 based on Jetty Httpclient
+  </p>
+  <p>
+    It's provided provided courtesy of <a href="https://webtide.com">Webtide</a>
+  </p>
 </div>
