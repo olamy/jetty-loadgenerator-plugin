@@ -2,13 +2,19 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:st="jelly:stapler">
     <t:summary icon="monitor.png">
-        <ul>
-            <li>Total requests: ${it.globalCollectorInformations.totalCount} ms</li>
-            <li>Minimum responseTime: ${it.globalCollectorInformations.minValue} ms</li>
-            <li>Maximum responseTime: ${it.globalCollectorInformations.maxValue} ms</li>
-            <li>50 percentile responseTime: ${it.globalCollectorInformations.value50} ms</li>
-            <li>90 percentile responseTime: ${it.globalCollectorInformations.value90} ms</li>            
-        </ul>
+        <j:set var="infos" value="${it.globalCollectorInformations}"/>
+        <j:if test="${infos != null}">
+            <ul>
+              <li>Total requests: ${infos.totalCount} ms</li>
+              <li>Minimum responseTime: ${infos.minValue} ms</li>
+              <li>Maximum responseTime: ${infos.maxValue} ms</li>
+              <li>50 percentile responseTime: ${infos.value50} ms</li>
+              <li>90 percentile responseTime: ${infos.value90} ms</li>
+          </ul>
+        </j:if>
+        <j:if test="${infos == null}">
+          No result available
+        </j:if>
     </t:summary>
 
 </j:jelly>
