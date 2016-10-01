@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core">
+	<script language="javascript" type="text/javascript" src="${rootURL}/plugin/loadgenerator/js/jquery-1.11.0.min.js"></script>
+	<script language="javascript" type="text/javascript"
+	        src="${rootURL}/plugin/loadgenerator/js/morris/morris.min.js"></script>
+	<script language="javascript" type="text/javascript"
+					src="${rootURL}/plugin/loadgenerator/js/morris/raphael-2.1.2.min.js"></script>
+	<script type="text/javascript">window.jQueryLoadGenerator = jQuery.noConflict()</script>
+	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/morris.css"/>
+</j:jelly>

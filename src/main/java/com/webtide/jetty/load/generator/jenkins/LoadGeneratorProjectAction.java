@@ -1,4 +1,4 @@
-package com.webtide.jetty.load.generator.plugin;
+package com.webtide.jetty.load.generator.jenkins;
 
 import hudson.model.AbstractProject;
 import hudson.model.Actionable;

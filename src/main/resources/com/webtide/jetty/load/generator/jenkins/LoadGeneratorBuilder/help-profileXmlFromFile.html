@@ -1,0 +1,47 @@
+<div>
+Path to a ResourceProfile Jetty Xml file:
+  <pre>
+    &lt;Configure id="ResourceProfile" class="org.eclipse.jetty.load.generator.profile.ResourceProfile"&gt;
+      &lt;Call name="addResource"&gt;
+        &lt;Arg&gt;
+          &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+            &lt;Arg&gt;index.html&lt;/Arg&gt;
+            &lt;Arg&gt;
+              &lt;Array type="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                &lt;Item&gt;
+                  &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                    &lt;Arg&gt;style.css&lt;/Arg&gt;
+                    &lt;Arg&gt;
+                      &lt;Array type="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                        &lt;Item&gt;
+                          &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                            &lt;Arg&gt;logo.gif&lt;/Arg&gt;
+                          &lt;/New&gt;
+                        &lt;/Item&gt;
+                        &lt;Item&gt;
+                          &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                            &lt;Arg&gt;spacer.png&lt;/Arg&gt;
+                          &lt;/New&gt;
+                        &lt;/Item&gt;
+                      &lt;/Array&gt;
+                    &lt;/Arg&gt;
+                  &lt;/New&gt;
+                &lt;/Item&gt;
+                &lt;Item&gt;
+                  &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                    &lt;Arg&gt;fancy.css&lt;/Arg&gt;
+                  &lt;/New&gt;
+                &lt;/Item&gt;
+                &lt;Item&gt;
+                  &lt;New class="org.eclipse.jetty.load.generator.profile.Resource"&gt;
+                    &lt;Arg&gt;anotherScript.js&lt;/Arg&gt;
+                  &lt;/New&gt;
+                &lt;/Item&gt;
+              &lt;/Array&gt;
+            &lt;/Arg&gt;
+          &lt;/New&gt;
+        &lt;/Arg&gt;
+      &lt;/Call&gt;
+    &lt;/Configure&gt;
+  </pre>
+</div>

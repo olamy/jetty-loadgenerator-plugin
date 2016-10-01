@@ -15,7 +15,7 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-package com.webtide.jetty.load.generator.plugin;
+package com.webtide.jetty.load.generator.jenkins;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;

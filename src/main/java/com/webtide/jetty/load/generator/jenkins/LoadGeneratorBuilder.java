@@ -15,9 +15,8 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-package com.webtide.jetty.load.generator.plugin;
+package com.webtide.jetty.load.generator.jenkins;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Extension;
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -186,7 +184,7 @@ public class LoadGeneratorBuilder
     {
         try
         {
-            run( listener, build.getWorkspace(), build.getRootBuild() );
+            doRun( listener, build.getWorkspace(), build.getRootBuild() );
         }
         catch ( Exception e )
         {
@@ -204,7 +202,7 @@ public class LoadGeneratorBuilder
         LOGGER.debug( "simpleBuildStep perform" );
         try
         {
-            run( taskListener, filePath, run );
+            doRun( taskListener, filePath, run );
         }
         catch ( Exception e )
         {
@@ -213,7 +211,7 @@ public class LoadGeneratorBuilder
     }
 
 
-    protected void run( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
+    protected void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
         throws Exception
     {
 
@@ -310,7 +308,7 @@ public class LoadGeneratorBuilder
         writing files may be more usefull with maven plugins (using a recorder
         ObjectMapper objectMapper = new ObjectMapper();
 
-        File rootDir = run.getRootDir();
+        File rootDir = doRun.getRootDir();
 
         File reportDirectory = new File( rootDir, REPORT_DIRECTORY_NAME );
         reportDirectory.mkdirs();

@@ -15,13 +15,11 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-package com.webtide.jetty.load.generator.plugin;
+package com.webtide.jetty.load.generator.jenkins;
 
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
-import hudson.model.RootAction;
 import org.eclipse.jetty.load.generator.CollectorInformations;
-import org.eclipse.jetty.load.generator.report.GlobalSummaryReportListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;

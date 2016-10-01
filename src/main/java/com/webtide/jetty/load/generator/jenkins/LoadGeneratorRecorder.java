@@ -15,29 +15,23 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-package com.webtide.jetty.load.generator.plugin;
+package com.webtide.jetty.load.generator.jenkins;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.HealthReport;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 
 /**
  * Created by olamy on 21/09/2016.
