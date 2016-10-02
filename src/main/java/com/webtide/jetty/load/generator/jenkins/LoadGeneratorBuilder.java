@@ -396,7 +396,7 @@ public class LoadGeneratorBuilder
          */
         public String getDisplayName()
         {
-            return "Jetty LoadGenerator";
+            return "HTTP LoadGenerator";
         }
 
         public List<TimeUnit> getTimeUnits()

@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:m="com/webtide/jetty/load/generator/jenkins/tags">
   <l:layout title="Load Generator">
     <l:main-panel>
       <h1>LoadGeneratorProjectAction index.jelly</h1>
+      <p>
+       <m:morris id="meanResponseTime" height="400px" width="100%"/>
+      </p>
     </l:main-panel>
   </l:layout>
 
