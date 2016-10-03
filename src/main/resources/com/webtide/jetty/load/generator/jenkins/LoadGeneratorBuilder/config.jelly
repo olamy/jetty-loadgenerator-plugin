@@ -29,6 +29,9 @@
       </j:forEach>
     </select>
   </f:entry>
+  <f:entry title="${%Secured Protocol}">
+    <f:checkbox name="secureProtocol" checked="${instance.secureProtocol}" default="false" />
+  </f:entry>
   <f:entry title="${%Running Time Unit}">
     <select class="setting-input" name="runningTimeUnit">
       <j:forEach var="s" items="${descriptor.timeUnits}">

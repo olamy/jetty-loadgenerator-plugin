@@ -1,0 +1,24 @@
+.graph-container {
+    border: 1px solid #ccc;
+    box-shadow: 1px 1px 2px #eee;
+    margin: 3px 0;
+    padding-top: 10px;
+    position: relative;
+}
+.graph-container::after {
+    background-color: #eeeeee;
+    border: 1px solid #ccc;
+    display: block;
+    font-size: 12px;
+    left: -1px;
+    padding: 3px 3px;
+    position: absolute;
+    top: -1px;
+}
+.graph-container .caption {
+    text-align: center;
+}
+
+.floating-box::after{
+    content: 'Load Generator Trend';
+}

@@ -113,13 +113,13 @@ public class LoadGeneratorBuilder
 
     private LoadGenerator.Transport transport;
 
-    private boolean secured;
+    private boolean secureProtocol;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
                                  int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
-                                 LoadGenerator.Transport transport, boolean secured )
+                                 LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -131,7 +131,7 @@ public class LoadGeneratorBuilder
         this.runIteration = runIteration;
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
-        this.secured = secured;
+        this.secureProtocol = secureProtocol;
     }
 
     public String getProfileGroovy()
@@ -199,9 +199,9 @@ public class LoadGeneratorBuilder
         return transport;
     }
 
-    public boolean isSecured()
+    public boolean isSecureProtocol()
     {
-        return secured;
+        return secureProtocol;
     }
 
     @Override
@@ -305,7 +305,7 @@ public class LoadGeneratorBuilder
         //.requestListeners( testRequestListener ) //
         //.executor( new QueuedThreadPool() )
 
-        if (secured) {
+        if (secureProtocol) {
             // well that's an easy accept everything one...
             builder.sslContextFactory( new SslContextFactory( true ) );
         }

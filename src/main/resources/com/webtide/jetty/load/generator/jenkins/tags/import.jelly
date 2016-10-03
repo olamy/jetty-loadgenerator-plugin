@@ -8,4 +8,5 @@
 					src="${rootURL}/plugin/loadgenerator/js/morris/raphael-2.1.2.min.js"></script>
 	<script type="text/javascript">window.jQueryLoadGenerator = jQuery.noConflict()</script>
 	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/morris.css"/>
+	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/loadgenerator.css"/>
 </j:jelly>
