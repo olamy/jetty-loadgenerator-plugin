@@ -1,9 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
   <l:layout title="Load Generator">
+    <m:import/>
     <l:main-panel>
-      <h1>LoadGenerator Per Path result</h1>
+      <h2>LoadGenerator Per Path result</h2>
+      <j:forEach var="e" items="${it.allResponseInfoTimePerPath.entrySet()}">
+        <h3>Path: ${e.key}</h3>
+        <div id="load_generator_all_${e.key}" style="width: 80%;height: 100px"/>
+        <script type="text/javascript" language="javascript">
+          jQueryLoadGenerator.noConflict();
+          var url = "timeSeries?path=" + encodeURIComponent('${e.key}');
+          jQueryLoadGenerator.getJSON(url, function (json) {
+            var grah = Morris.Line({
+              element: 'load_generator_all_${e.key}',
+              data: json,
+              xkey: 'timeStamp',
+              ykeys: ['time'],
+              labels: ['Time'],
+              resize: true,
+              hideHover: 'auto',
+              dateFormat: function(x) {
+                            return moment(new Date(x)).format('DD/MM/YYYY H:mm:ss');
+                          },
+              xLabelFormat: function(x) {
+                            return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+                          }
+            });
+          });
+        </script>
+      </j:forEach>
     </l:main-panel>
   </l:layout>
 

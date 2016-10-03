@@ -17,13 +17,19 @@
 
 package com.webtide.jetty.load.generator.jenkins;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletException;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,14 +49,18 @@ public class LoadGeneratorBuildAction
 
     private final Map<String, CollectorInformations> perPath;
 
+    private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
+
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
                                      CollectorInformations globalCollectorInformations,
-                                     Map<String, CollectorInformations> perPath )
+                                     Map<String, CollectorInformations> perPath,
+                                     Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath )
     {
         this.health = health;
         this.summaryReport = summaryReport;
         this.globalCollectorInformations = globalCollectorInformations;
         this.perPath = perPath;
+        this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
     }
 
     public SummaryReport getSummaryReport()
@@ -61,6 +71,22 @@ public class LoadGeneratorBuildAction
     public CollectorInformations getGlobalCollectorInformations()
     {
         return globalCollectorInformations;
+    }
+
+    public Map<String, List<ResponseTimeInfo>> getAllResponseInfoTimePerPath()
+    {
+        return allResponseInfoTimePerPath;
+    }
+
+    public void doTimeSeries( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
+    {
+        LOGGER.debug( "doTimeSeries" );
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        objectMapper.writeValue( rsp.getWriter(), allResponseInfoTimePerPath.get( req.getParameter( "path" ) ) );
+
     }
 
     @Override

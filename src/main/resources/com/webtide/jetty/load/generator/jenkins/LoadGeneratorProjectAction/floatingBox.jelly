@@ -16,7 +16,13 @@
             ykeys: ['mean','maxValue','value90'],
             labels: ['Mean', 'Max', '90 Percentile'],
             resize: true,
-            hideHover: 'auto'
+            hideHover: 'auto',
+            dateFormat: function(x) {
+                          return moment(new Date(x)).format('DD/MM/YYYY H:mm:ss');
+                        },
+            xLabelFormat: function(x) {
+                          return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+                        }
           });
         });
     </script>

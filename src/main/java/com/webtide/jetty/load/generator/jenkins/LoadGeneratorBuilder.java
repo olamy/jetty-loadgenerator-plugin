@@ -45,6 +45,8 @@ import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
+import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
+import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
 import org.eclipse.jetty.load.generator.report.GlobalSummaryReportListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
@@ -232,6 +234,10 @@ public class LoadGeneratorBuilder
         ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
         GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
+        // this one will use some memory for a long load test!!
+        // FIXME find a way to flush that somewhere!!
+        DetailledResponseTimeReportListener detailledResponseTimeReportListener =
+            new DetailledResponseTimeReportListener();
 
         List<ResponseTimeListener> listeners = new ArrayList<>();
         if ( this.responseTimeListeners != null )
@@ -241,6 +247,7 @@ public class LoadGeneratorBuilder
         listeners.add( responseTimePerPath );
         listeners.add( responseNumberPerPath );
         listeners.add( globalSummaryReportListener );
+        listeners.add( detailledResponseTimeReportListener );
 
         // TODO remove that one which is for debug purpose
         if ( LOGGER.isDebugEnabled() )
@@ -316,11 +323,26 @@ public class LoadGeneratorBuilder
         // TODO calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
 
+        Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
+
+        for ( DetailledResponseTimeReport.Entry entry : detailledResponseTimeReportListener.getDetailledResponseTimeReport().getEntries() )
+        {
+            List<ResponseTimeInfo> responseTimeInfos = allResponseInfoTimePerPath.get( entry.getPath() );
+            if ( responseTimeInfos == null )
+            {
+                responseTimeInfos = new ArrayList<>();
+                allResponseInfoTimePerPath.put( entry.getPath(), responseTimeInfos );
+            }
+            responseTimeInfos.add( new ResponseTimeInfo( entry.getTimeStamp(), //
+                                                         TimeUnit.NANOSECONDS.toMillis( entry.getTime() ) ) );
+
+        }
+
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations(
                                                          globalSummaryReportListener.getHistogram() ), //
-                                                     perPath ) );
+                                                     perPath, allResponseInfoTimePerPath ) );
         LOGGER.debug( "end" );
     }
 

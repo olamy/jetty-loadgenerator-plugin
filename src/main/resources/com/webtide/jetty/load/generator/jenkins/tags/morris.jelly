@@ -43,7 +43,14 @@
 								ykeys: ${attrs.ykeys},
 								labels: ${attrs.labels},
 								hideHover: '${attrs.hideOver}',
-								resize: ${attrs.resize}
+								resize: ${attrs.resize},
+								dateFormat: function(x) {
+															return moment(new Date(x)).format('DD/MM/YYYY H:mm:ss');
+														},
+								xLabelFormat: function(x) {
+															return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+														}
+
 				});
 			});
 		</script>

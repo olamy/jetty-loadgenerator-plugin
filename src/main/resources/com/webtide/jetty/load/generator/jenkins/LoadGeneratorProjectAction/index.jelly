@@ -5,11 +5,12 @@
   <l:layout title="Load Generator">
     <m:import/>
     <l:main-panel>
+      <h2>Global Reponse Time</h2>
       <p>
-        <m:morris id="meanResponseTime" height="200px" width="50%" data="${it.data}"
+        <m:morris id="meanResponseTime" height="300px" width="50%" data="${it.globalData}"
                  xkey="endTimeStamp"
-                  ykeys="['mean','minValue','maxValue','value90']"
-                  labels="['Mean','Min','Max','90 Percentile']"
+                  ykeys="['mean','minValue','maxValue','value90', 'value50']"
+                  labels="['Mean','Min','Max','90 Percentile','50 Percentile']"
                   hideOver="auto" resize="true"/>
       </p>
     </l:main-panel>
