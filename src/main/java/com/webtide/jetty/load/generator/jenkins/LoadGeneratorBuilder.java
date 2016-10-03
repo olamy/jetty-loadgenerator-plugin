@@ -41,7 +41,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.load.generator.CollectorInformations;
+import org.eclipse.jetty.load.generator.Http2TransportBuilder;
+import org.eclipse.jetty.load.generator.HttpFCGITransportBuilder;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
@@ -52,6 +55,7 @@ import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -107,10 +111,15 @@ public class LoadGeneratorBuilder
 
     private ResourceProfile loadProfile;
 
+    private LoadGenerator.Transport transport;
+
+    private boolean secured;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
-                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate )
+                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
+                                 LoadGenerator.Transport transport, boolean secured )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -121,6 +130,8 @@ public class LoadGeneratorBuilder
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
+        this.transport = transport;
+        this.secured = secured;
     }
 
     public String getProfileGroovy()
@@ -181,6 +192,16 @@ public class LoadGeneratorBuilder
     public void setLoadProfile( ResourceProfile loadProfile )
     {
         this.loadProfile = loadProfile;
+    }
+
+    public LoadGenerator.Transport getTransport()
+    {
+        return transport;
+    }
+
+    public boolean isSecured()
+    {
+        return secured;
     }
 
     @Override
@@ -272,19 +293,24 @@ public class LoadGeneratorBuilder
         }
         //ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool( 1);
 
-        LoadGenerator loadGenerator = new LoadGenerator.Builder() //
+        LoadGenerator.Builder builder = new LoadGenerator.Builder() //
             .host( getHost() ) //
             .port( getPort() ) //
             .users( getUsers() ) //
             .transactionRate( getTransactionRate() ) //
-            .transport( LoadGenerator.Transport.HTTP ) //
-            .httpClientTransport( new HttpTransportBuilder().build() ) //
-            //.sslContextFactory( sslContextFactory ) //
+            .transport( getTransport() ) //
+            .httpClientTransport( httpClientTransport() ) //
             .loadProfile( resourceProfile ) //
-            .responseTimeListeners( listeners.toArray( new ResponseTimeListener[listeners.size()] ) ) //
-            //.requestListeners( testRequestListener ) //
-            //.executor( new QueuedThreadPool() )
-            .build();
+            .responseTimeListeners( listeners.toArray( new ResponseTimeListener[listeners.size()] ) ); //
+        //.requestListeners( testRequestListener ) //
+        //.executor( new QueuedThreadPool() )
+
+        if (secured) {
+            // well that's an easy accept everything one...
+            builder.sslContextFactory( new SslContextFactory( true ) );
+        }
+
+        LoadGenerator loadGenerator = builder.build();
 
         if ( runIteration > 0 )
         {
@@ -352,6 +378,23 @@ public class LoadGeneratorBuilder
         return new LoadGeneratorProjectAction( project );
     }
 
+    protected HttpClientTransport httpClientTransport()
+    {
+        switch ( getTransport() )
+        {
+            case HTTP:
+            case HTTPS:
+                return new HttpTransportBuilder().build();
+            case H2:
+            case H2C:
+                return new Http2TransportBuilder().build();
+            case FCGI:
+                return new HttpFCGITransportBuilder().build();
+
+        }
+        throw new IllegalArgumentException( "unknown transport: " + getTransport() );
+    }
+
     protected ResourceProfile loadResourceProfile( FilePath workspace )
         throws Exception
     {
@@ -410,6 +453,12 @@ public class LoadGeneratorBuilder
                                                                         TimeUnit.SECONDS, //
                                                                         TimeUnit.MILLISECONDS );
 
+        private static final List<LoadGenerator.Transport> TRANSPORTS = Arrays.asList( LoadGenerator.Transport.HTTP, //
+                                                                                       LoadGenerator.Transport.HTTPS, //
+                                                                                       LoadGenerator.Transport.H2, //
+                                                                                       LoadGenerator.Transport.H2C, //
+                                                                                       LoadGenerator.Transport.FCGI );
+
         /**
          * This human readable name is used in the configuration screen.
          */
@@ -421,6 +470,12 @@ public class LoadGeneratorBuilder
         public List<TimeUnit> getTimeUnits()
         {
             return TIME_UNITS;
+        }
+
+
+        public List<LoadGenerator.Transport> getTransports()
+        {
+            return TRANSPORTS;
         }
 
         public FormValidation doCheckPort( @QueryParameter String value )
