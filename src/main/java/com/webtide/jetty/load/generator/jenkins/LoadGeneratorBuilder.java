@@ -25,6 +25,7 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.HealthReport;
 import hudson.model.Result;
@@ -60,6 +61,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -200,6 +202,7 @@ public class LoadGeneratorBuilder
         throws InterruptedException, IOException
     {
         LOGGER.debug( "simpleBuildStep perform" );
+
         try
         {
             doRun( taskListener, filePath, run );
@@ -220,13 +223,13 @@ public class LoadGeneratorBuilder
 
         if ( resourceProfile == null )
         {
-            taskListener.getLogger().print( "resource profile must be set, Build ABORTED" );
+            taskListener.getLogger().println( "resource profile must be set, Build ABORTED" );
             LOGGER.error( "resource profile must be set, Build ABORTED" );
             run.setResult( Result.ABORTED );
             return;
         }
 
-        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener(false);
+        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
         GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
 
@@ -278,55 +281,54 @@ public class LoadGeneratorBuilder
 
         if ( runIteration > 0 )
         {
-            taskListener.getLogger().print( "starting " + runIteration + " iterations, load generator to host " + host + " with port " + port );
+            taskListener.getLogger().println(
+                "starting " + runIteration + " iterations, load generator to host " + host + " with port " + port );
             loadGenerator.run( runIteration );
             LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
         }
         else
         {
-            taskListener.getLogger().print( "starting for " + runningTime + " " + runningTimeUnit.toString() + " iterations, load generator to host " + host + " with port " + port );
+            taskListener.getLogger().println( "starting for " + runningTime + " " + runningTimeUnit.toString()
+                                                  + " iterations, load generator to host " + host + " with port "
+                                                  + port );
             loadGenerator.run( runningTime, runningTimeUnit );
         }
 
-        taskListener.getLogger().print( "load generator stopped, enjoy your results!!" );
+        taskListener.getLogger().println( "load generator stopped, enjoy your results!!" );
 
         SummaryReport summaryReport = new SummaryReport();
+
+        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getRecorderPerPath().size() );
 
         for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getRecorderPerPath().entrySet() )
         {
             String path = entry.getKey();
             Histogram histogram = entry.getValue().getIntervalHistogram();
+            perPath.put( entry.getKey(), new CollectorInformations( histogram ) );
             AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
             LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
-                         path, //
-                         TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
-                         number.get() );
+                          path, //
+                          TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
+                          number.get() );
             summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
         }
-
-        /*
-        writing files may be more usefull with maven plugins (using a recorder
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        File rootDir = doRun.getRootDir();
-
-        File reportDirectory = new File( rootDir, REPORT_DIRECTORY_NAME );
-        reportDirectory.mkdirs();
-
-        objectMapper.writeValue( new File( reportDirectory, SUMMARY_REPORT_FILE ), summaryReport );
-
-        */
 
         // TODO calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
 
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
-                                                     new CollectorInformations( globalSummaryReportListener.getHistogram())) );
-
+                                                     new CollectorInformations(
+                                                         globalSummaryReportListener.getHistogram() ), //
+                                                     perPath ) );
         LOGGER.debug( "end" );
     }
 
+    @Override
+    public Action getProjectAction( AbstractProject<?, ?> project )
+    {
+        return new LoadGeneratorProjectAction( project );
+    }
 
     protected ResourceProfile loadResourceProfile( FilePath workspace )
         throws Exception
@@ -375,11 +377,6 @@ public class LoadGeneratorBuilder
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    /**
-     * Descriptor for {@link LoadGeneratorBuilder}. Used as a singleton.
-     * See <tt>views/hudson/plugins/hello_world/LoadGeneratorBuilder/*.jelly</tt>
-     * for the actual HTML fragment for the configuration screen.
-     */
     @Extension
     public static final class DescriptorImpl
         extends BuildStepDescriptor<Builder>

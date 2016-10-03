@@ -21,12 +21,10 @@ import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * Created by olamy on 21/09/2016.
@@ -43,11 +41,16 @@ public class LoadGeneratorBuildAction
 
     private final CollectorInformations globalCollectorInformations;
 
-    public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport, CollectorInformations globalCollectorInformations )
+    private final Map<String, CollectorInformations> perPath;
+
+    public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
+                                     CollectorInformations globalCollectorInformations,
+                                     Map<String, CollectorInformations> perPath )
     {
         this.health = health;
         this.summaryReport = summaryReport;
         this.globalCollectorInformations = globalCollectorInformations;
+        this.perPath = perPath;
     }
 
     public SummaryReport getSummaryReport()
@@ -70,6 +73,11 @@ public class LoadGeneratorBuildAction
         return null;
     }
 
+    public Map<String, CollectorInformations> getPerPath()
+    {
+        return perPath;
+    }
+
     @Override
     public String getIconFileName()
     {
@@ -88,11 +96,5 @@ public class LoadGeneratorBuildAction
         return PluginConstants.URL_NAME;
     }
 
-    public void doGraph( StaplerRequest req, StaplerResponse rsp) throws IOException
-    {
-        LOGGER.info( "doGraph" );
 
-        //JFreeChart chart = new CoverageChart( this).createChart();
-        //ChartUtil.generateGraph(req, rsp, chart, 500, 200);
-    }
 }

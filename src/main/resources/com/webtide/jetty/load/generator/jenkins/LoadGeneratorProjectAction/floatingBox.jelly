@@ -1,6 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:local="local">
-    LoadGeneratorProjectAction # floatingBox.jelly
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:local="local"
+         xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
+
+    <m:import/>
+    <div id="load_generator_trend" style="width: 80%;height: 100px"/>
+    <script type="text/javascript" language="javascript">
+        jQueryLoadGenerator.noConflict();
+        jQueryLoadGenerator.getJSON("loadgenerator/trend", function (json) {
+          var grah = Morris.Line({
+            element: 'load_generator_trend',
+            data: json,
+            xkey: 'endTimeStamp',
+            ykeys: ['mean','maxValue','value90'],
+            labels: ['Mean', 'Max', '90 Percentile'],
+            resize: true,
+            hideHover: 'auto'
+          });
+        });
+    </script>
+
 </j:jelly>

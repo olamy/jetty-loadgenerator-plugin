@@ -58,6 +58,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-http</artifactId>
+      <version>${jetty.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <version>${jetty.version}</version>
       <scope>test</scope>
@@ -99,14 +104,14 @@
           <artifactId>maven-hpi-plugin</artifactId>
           <version>1.120</version>
           <configuration>
+            <!--
             <loggers>
               <hudson>FINE</hudson>
             </loggers>
+            -->
+            <jenkinsHome>${project.basedir}/.work</jenkinsHome>
             <consoleForceReload>false</consoleForceReload>
             <disabledTestInjection>true</disabledTestInjection>
-            <systemProperties>
-              <JENKINS_HOME>${project.basedir}/.work</JENKINS_HOME>
-            </systemProperties>
           </configuration>
         </plugin>
       </plugins>

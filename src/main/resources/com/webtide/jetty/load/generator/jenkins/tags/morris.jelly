@@ -14,6 +14,22 @@
 		<st:attribute name="width">
 			Width of the graph
 		</st:attribute>
+		<st:attribute name="xkey">
+			Morris xkey value
+		</st:attribute>
+		<st:attribute name="ykeys">
+			Morris ykeys array
+		</st:attribute>
+		<st:attribute name="labels">
+			Morris labels array
+		</st:attribute>
+		<st:attribute name="hideOver">
+			Morris hideOver
+		</st:attribute>
+		<st:attribute name="resize">
+			Morris resize
+		</st:attribute>
+
 
 	</st:documentation>
 	<div id="${attrs.id}" style="width: ${attrs.width};height: ${attrs.height};">
@@ -22,19 +38,13 @@
 			jQueryLoadGenerator(document).ready(function () {
 				var grah = Morris.Line({
 								element: '${attrs.id}',
-								data: [
-								{ y: '2006', a: 100, b: 90 },
-								{ y: '2007', a: 75,  b: 65 },
-								{ y: '2008', a: 50,  b: 40 },
-								{ y: '2009', a: 75,  b: 65 },
-								{ y: '2010', a: 50,  b: 40 },
-								{ y: '2011', a: 75,  b: 65 },
-								{ y: '2012', a: 100, b: 90 }
-								],
-								xkey: 'y',
-								ykeys: ['a', 'b'],
-								labels: ['Series A', 'Series B']
-								});
+								data: ${attrs.data},
+							  xkey: '${attrs.xkey}',
+								ykeys: ${attrs.ykeys},
+								labels: ${attrs.labels},
+								hideHover: '${attrs.hideOver}',
+								resize: ${attrs.resize}
+				});
 			});
 		</script>
 	</div>

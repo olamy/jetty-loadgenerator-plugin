@@ -4,17 +4,41 @@
     <t:summary icon="monitor.png">
         <j:set var="infos" value="${it.globalCollectorInformations}"/>
         <j:if test="${infos != null}">
+          <p>
+            <h3>Global results</h3>
             <ul>
-              <li>Total requests: ${infos.totalCount} ms</li>
+              <li>Total requests: ${infos.totalCount} </li>
               <li>Minimum responseTime: ${infos.minValue} ms</li>
               <li>Maximum responseTime: ${infos.maxValue} ms</li>
+              <li>mean responseTime: ${infos.mean} ms</li>
               <li>50 percentile responseTime: ${infos.value50} ms</li>
               <li>90 percentile responseTime: ${infos.value90} ms</li>
-          </ul>
+            </ul>
+          </p>
         </j:if>
         <j:if test="${infos == null}">
           No result available
         </j:if>
+        <p>
+          <h3>Par Path results</h3>
+          <j:forEach var="e" items="${it.perPath.entrySet()}">
+            <ul>
+              <li>
+                ${e.key}
+                <ul>
+                  <j:set var="infos" value="${e.value}"/>
+                  <li>Total requests: ${infos.totalCount} </li>
+                  <li>Minimum responseTime: ${infos.minValue} ms</li>
+                  <li>Maximum responseTime: ${infos.maxValue} ms</li>
+                  <li>mean responseTime: ${infos.mean} ms</li>
+                  <li>50 percentile responseTime: ${infos.value50} ms</li>
+                  <li>90 percentile responseTime: ${infos.value90} ms</li>
+                </ul>
+              </li>
+            </ul>
+          </j:forEach>
+        </p>
+
     </t:summary>
 
 </j:jelly>

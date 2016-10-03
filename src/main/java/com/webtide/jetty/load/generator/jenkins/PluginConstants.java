@@ -5,8 +5,8 @@ package com.webtide.jetty.load.generator.jenkins;
  */
 public interface PluginConstants
 {
-    String ICON_URL = "/plugin/jetty-loadgenerator/img/logo.png";
+    String ICON_URL = "/plugin/loadgenerator/img/logo.png";
     String DISPLAY_NAME = "HTTP Load Testing Plugin";
-    String URL_NAME = "jetty-loadgenerator";
+    String URL_NAME = "loadgenerator";
 
 }
