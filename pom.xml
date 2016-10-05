@@ -18,7 +18,7 @@
 
   <properties>
     <jenkins.version>2.0</jenkins.version>
-    <jenkins.workflow.version>2.1</jenkins.workflow.version>
+    <jenkins.workflow.version>2.7</jenkins.workflow.version>
     <java.level>8</java.level>
     <jenkins.version>1.651.2</jenkins.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
@@ -103,7 +103,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-step-api</artifactId>
-      <version>${jenkins.workflow.version}</version>
+      <version>2.4</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
@@ -115,7 +115,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-basic-steps</artifactId>
-      <version>${jenkins.workflow.version}</version>
+      <version>2.2</version>
       <scope>test</scope>
     </dependency>
 

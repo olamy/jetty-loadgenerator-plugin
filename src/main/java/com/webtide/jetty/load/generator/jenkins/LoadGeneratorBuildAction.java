@@ -18,8 +18,14 @@
 package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
+import hudson.model.Job;
+import hudson.model.Run;
+import hudson.model.TopLevelItem;
+import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.StaplerRequest;
@@ -29,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +44,7 @@ import java.util.Map;
  *
  */
 public class LoadGeneratorBuildAction
-    implements HealthReportingAction  // , SimpleBuildStep
+    implements HealthReportingAction, SimpleBuildStep.LastBuildAction
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuildAction.class );
@@ -51,16 +59,20 @@ public class LoadGeneratorBuildAction
 
     private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
 
+    private Job job;
+
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
                                      CollectorInformations globalCollectorInformations,
                                      Map<String, CollectorInformations> perPath,
-                                     Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath )
+                                     Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath, Run<?,?> run )
     {
         this.health = health;
         this.summaryReport = summaryReport;
         this.globalCollectorInformations = globalCollectorInformations;
         this.perPath = perPath;
+        this.job = run.getParent();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
+
     }
 
     public SummaryReport getSummaryReport()
@@ -89,12 +101,12 @@ public class LoadGeneratorBuildAction
 
     }
 
-    /*
     @Override
     public Collection<? extends Action> getProjectActions()
     {
-        return null;
-    }*/
+        return Arrays.asList( new LoadGeneratorProjectAction( this.job ));
+    }
+
 
     @Override
     public HealthReport getBuildHealth()

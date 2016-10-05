@@ -64,7 +64,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol() );
 
-        builder.perform( run, filePath, launcher, taskListener );
+        builder.doRun( taskListener, filePath, run );
 
         return null;
     }

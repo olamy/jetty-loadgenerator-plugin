@@ -257,7 +257,7 @@ public class LoadGeneratorBuilder
     }
 
 
-    protected void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
+    public void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
         throws Exception
     {
 
@@ -388,16 +388,10 @@ public class LoadGeneratorBuilder
                                                      summaryReport, //
                                                      new CollectorInformations(
                                                          globalSummaryReportListener.getHistogram() ), //
-                                                     perPath, allResponseInfoTimePerPath ));
+                                                     perPath, allResponseInfoTimePerPath, run ));
         LOGGER.debug( "end" );
     }
 
-
-    @Override
-    public Action getProjectAction( AbstractProject<?, ?> project )
-    {
-        return new LoadGeneratorProjectAction( project );
-    }
 
     protected HttpClientTransport httpClientTransport()
     {

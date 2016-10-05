@@ -57,13 +57,20 @@ public class LoadGeneratorProjectAction
     public LoadGeneratorProjectAction( Job<?, ?> project )
     {
         this.project = project;
-        LoadGeneratorBuildAction loadGeneratorBuildAction =
-            project.getLastBuild().getAction( LoadGeneratorBuildAction.class );
-        if ( loadGeneratorBuildAction != null )
+        // well that's weird but can happen especially with pipeline...
+        if (project != null)
         {
-            this.health = loadGeneratorBuildAction.getBuildHealth();
-            this.summaryReport = loadGeneratorBuildAction.getSummaryReport();
-            this.globalCollectorInformations = loadGeneratorBuildAction.getGlobalCollectorInformations();
+            Run lastBuild = project.getLastBuild();
+            if ( lastBuild != null )
+            {
+                LoadGeneratorBuildAction loadGeneratorBuildAction = lastBuild.getAction( LoadGeneratorBuildAction.class );
+                if ( loadGeneratorBuildAction != null )
+                {
+                    this.health = loadGeneratorBuildAction.getBuildHealth();
+                    this.summaryReport = loadGeneratorBuildAction.getSummaryReport();
+                    this.globalCollectorInformations = loadGeneratorBuildAction.getGlobalCollectorInformations();
+                }
+            }
         }
     }
 
