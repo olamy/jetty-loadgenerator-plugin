@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="${%Host}" field="host">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Port}" field="port">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Transaction Rate}" field="transactionRate">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Users}" field="users">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Profile Groovy}" field="profileGroovy">
+    <f:expandableTextbox />
+  </f:entry>
+  <f:entry title="${%Profile Xml From Path}" field="profileXmlFromFile">
+    <f:textbox/>
+  </f:entry>
+  <f:entry title="${%Running Time}" field="runningTime">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Transport}">
+    <select class="setting-input" name="transport">
+      <j:forEach var="s" items="${descriptor.transports}">
+        <f:option selected="${s==instance.transport}">${s}</f:option>
+      </j:forEach>
+    </select>
+  </f:entry>
+  <f:entry title="${%Secured Protocol}">
+    <f:checkbox name="secureProtocol" checked="${instance.secureProtocol}" default="false" />
+  </f:entry>
+  <f:entry title="${%Running Time Unit}">
+    <select class="setting-input" name="runningTimeUnit">
+      <j:forEach var="s" items="${descriptor.timeUnits}">
+        <f:option selected="${s==instance.runningTimeUnit}">${s}</f:option>
+      </j:forEach>
+    </select>
+  </f:entry>
+  <f:entry title="${%Running Iteration}" field="runIteration">
+    <f:textbox />
+  </f:entry>
+</j:jelly>

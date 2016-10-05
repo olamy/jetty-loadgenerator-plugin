@@ -47,6 +47,7 @@ import org.eclipse.jetty.load.generator.Http2TransportBuilder;
 import org.eclipse.jetty.load.generator.HttpFCGITransportBuilder;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
+import org.eclipse.jetty.load.generator.profile.Resource;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
@@ -57,6 +58,7 @@ import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
@@ -122,6 +124,24 @@ public class LoadGeneratorBuilder
                                  LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
+        this.host = host;
+        this.port = port;
+        this.users = users;
+        this.profileXmlFromFile = profileXmlFromFile;
+        this.runningTime = runningTime < 1 ? 30 : runningTime;
+        this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
+        this.runIteration = runIteration;
+        this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
+        this.transport = transport;
+        this.secureProtocol = secureProtocol;
+    }
+
+    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users, String profileXmlFromFile,
+                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
+                                 LoadGenerator.Transport transport, boolean secureProtocol )
+    {
+        this.profileGroovy = null;
+        this.loadProfile = resourceProfile;
         this.host = host;
         this.port = port;
         this.users = users;
@@ -442,7 +462,7 @@ public class LoadGeneratorBuilder
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension
+    @Extension @Symbol("loadgenerator")
     public static final class DescriptorImpl
         extends BuildStepDescriptor<Builder>
     {

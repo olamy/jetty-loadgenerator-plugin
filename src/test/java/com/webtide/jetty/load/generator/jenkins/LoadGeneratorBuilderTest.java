@@ -20,6 +20,7 @@ package com.webtide.jetty.load.generator.jenkins;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import org.apache.commons.io.IOUtils;
+import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -103,7 +104,7 @@ public class LoadGeneratorBuilderTest
         LoadGeneratorBuilder loadGeneratorBuilder =
             new LoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
                                       1, "", 20, TimeUnit.SECONDS, //
-                                      iteration, 1 );
+                                      iteration, 1, LoadGenerator.Transport.HTTP, false );
 
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 

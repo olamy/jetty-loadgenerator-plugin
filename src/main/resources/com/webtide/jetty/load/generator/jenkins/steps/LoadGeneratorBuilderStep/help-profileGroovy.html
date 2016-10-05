@@ -1,0 +1,21 @@
+<div>
+Groovy script returning a ResourceProfile:
+  <pre>
+return new ResourceProfile(new Resource( "/jenkins",
+                             new Resource( "/jenkins/job/foo",
+                               new Resource( "/logo.gif" ),
+                               new Resource( "/spacer.png" )
+                             ),
+                             new Resource( "/fancy.css" ),
+                             new Resource( "/script.js",
+                                           new Resource( "/library.js" ),
+                                           new Resource( "/morestuff.js" )
+                            ),
+                            new Resource( "/anotherScript.js" ),
+                            new Resource( "/iframeContents.html" ),
+                            new Resource( "/moreIframeContents.html" ),
+                            new Resource( "/favicon.ico" )
+    )
+);
+  </pre>
+</div>
