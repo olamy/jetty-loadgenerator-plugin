@@ -1,9 +1,26 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2016 Webtide LLC, Olivier Lamy
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
 package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import hudson.model.AbstractProject;
 import hudson.model.Actionable;
 import hudson.model.HealthReport;
+import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import org.eclipse.jetty.load.generator.CollectorInformations;
@@ -20,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by olamy on 29/9/16.
+ *
  */
 public class LoadGeneratorProjectAction
     extends Actionable
@@ -35,12 +52,13 @@ public class LoadGeneratorProjectAction
 
     private CollectorInformations globalCollectorInformations;
 
-    private final AbstractProject<?, ?> project;
+    private final Job<?, ?> project;
 
-    public LoadGeneratorProjectAction( AbstractProject<?, ?> project )
+    public LoadGeneratorProjectAction( Job<?, ?> project )
     {
         this.project = project;
-        LoadGeneratorBuildAction loadGeneratorBuildAction = project.getLastBuild().getAction( LoadGeneratorBuildAction.class );
+        LoadGeneratorBuildAction loadGeneratorBuildAction =
+            project.getLastBuild().getAction( LoadGeneratorBuildAction.class );
         if ( loadGeneratorBuildAction != null )
         {
             this.health = loadGeneratorBuildAction.getBuildHealth();
@@ -55,7 +73,7 @@ public class LoadGeneratorProjectAction
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<CollectorInformations> datas = new ArrayList<>(  );
+        List<CollectorInformations> datas = new ArrayList<>();
 
         for ( Run run : project.getBuilds() )
         {
@@ -63,7 +81,7 @@ public class LoadGeneratorProjectAction
             if ( buildAction != null )
             {
                 CollectorInformations collectorInformations = buildAction.getGlobalCollectorInformations();
-                if (collectorInformations != null)
+                if ( collectorInformations != null )
                 {
                     datas.add( collectorInformations );
                 }
@@ -78,7 +96,8 @@ public class LoadGeneratorProjectAction
 
     }
 
-    public void doTrend( StaplerRequest req, StaplerResponse rsp ) throws IOException, ServletException
+    public void doTrend( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
     {
         LOGGER.debug( "doTrend" );
         String data = getGlobalData();

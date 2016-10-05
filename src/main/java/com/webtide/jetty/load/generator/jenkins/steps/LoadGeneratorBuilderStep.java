@@ -1,3 +1,20 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2016 Webtide LLC, Olivier Lamy
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+
 package com.webtide.jetty.load.generator.jenkins.steps;
 
 import hudson.Extension;
@@ -20,49 +37,29 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by olamy on 4/10/16.
+ *
  */
 public class LoadGeneratorBuilderStep
     extends AbstractStepImpl
 {
 
-
     private ResourceProfile resourceProfile;
-
-
     private String host;
-
-
     private int port;
-
-
     private int users;
-
-
     private String profileXmlFromFile;
-
-
     private int runningTime;
-
-
     private TimeUnit runningTimeUnit;
-
-
     private int runIteration;
-
-
     private int transactionRate;
-
-
     private LoadGenerator.Transport transport;
-
-
     private boolean secureProtocol;
 
     @DataBoundConstructor
-    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users, String profileXmlFromFile,
-                                     int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
-                                     LoadGenerator.Transport transport, boolean secureProtocol )
+    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
+                                     String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit,
+                                     int runIteration, int transactionRate, LoadGenerator.Transport transport,
+                                     boolean secureProtocol )
     {
         this.resourceProfile = resourceProfile;
         this.host = host;
@@ -160,6 +157,7 @@ public class LoadGeneratorBuilderStep
         }
     }
 
+
     @Extension
     public static class LoadGeneratorWhileList
         extends Whitelist
@@ -218,8 +216,7 @@ public class LoadGeneratorBuilderStep
         @Override
         public boolean permitsStaticFieldGet( @Nonnull Field field )
         {
-            if (field.getType().equals( LoadGenerator.Transport.class )
-                || field.getType().equals( TimeUnit.class ))
+            if ( field.getType().equals( LoadGenerator.Transport.class ) || field.getType().equals( TimeUnit.class ) )
             {
                 return true;
             }

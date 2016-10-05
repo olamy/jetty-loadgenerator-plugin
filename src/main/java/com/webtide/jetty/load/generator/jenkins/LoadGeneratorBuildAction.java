@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Webtide LLC
+//  Copyright (c) 1995-2016 Webtide LLC, Olivier Lamy
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,10 +33,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by olamy on 21/09/2016.
+ *
  */
 public class LoadGeneratorBuildAction
-    implements HealthReportingAction
+    implements HealthReportingAction  // , SimpleBuildStep
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuildAction.class );
@@ -88,6 +88,13 @@ public class LoadGeneratorBuildAction
         objectMapper.writeValue( rsp.getWriter(), allResponseInfoTimePerPath.get( req.getParameter( "path" ) ) );
 
     }
+
+    /*
+    @Override
+    public Collection<? extends Action> getProjectActions()
+    {
+        return null;
+    }*/
 
     @Override
     public HealthReport getBuildHealth()
