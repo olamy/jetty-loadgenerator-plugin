@@ -17,6 +17,7 @@
   <inceptionYear>2016</inceptionYear>
 
   <properties>
+    <findbugs.failOnError>false</findbugs.failOnError>
     <jenkins.version>2.0</jenkins.version>
     <jenkins.workflow.version>2.7</jenkins.workflow.version>
     <java.level>8</java.level>

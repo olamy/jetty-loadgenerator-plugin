@@ -34,16 +34,16 @@ public class LoadGeneratorBuilderStepExecution
 {
 
     @StepContextParameter
-    private Run<?, ?> run;
+    private transient Run<?, ?> run;
 
     @StepContextParameter
-    private FilePath filePath;
+    private transient FilePath filePath;
 
     @StepContextParameter
-    private Launcher launcher;
+    private transient Launcher launcher;
 
     @StepContextParameter
-    private TaskListener taskListener;
+    private transient TaskListener taskListener;
 
     @Inject
     private transient LoadGeneratorBuilderStep loadGeneratorBuilderStep;
