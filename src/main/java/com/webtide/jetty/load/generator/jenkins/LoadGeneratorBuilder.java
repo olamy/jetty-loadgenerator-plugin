@@ -25,7 +25,6 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Action;
 import hudson.model.BuildListener;
 import hudson.model.HealthReport;
 import hudson.model.Result;
@@ -47,7 +46,6 @@ import org.eclipse.jetty.load.generator.Http2TransportBuilder;
 import org.eclipse.jetty.load.generator.HttpFCGITransportBuilder;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
-import org.eclipse.jetty.load.generator.profile.Resource;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
@@ -136,9 +134,9 @@ public class LoadGeneratorBuilder
         this.secureProtocol = secureProtocol;
     }
 
-    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users, String profileXmlFromFile,
-                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
-                                 LoadGenerator.Transport transport, boolean secureProtocol )
+    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users,
+                                 String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit, int runIteration,
+                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = null;
         this.loadProfile = resourceProfile;
@@ -260,6 +258,12 @@ public class LoadGeneratorBuilder
     public void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
         throws Exception
     {
+        runEmbeddedLoadGenerator( taskListener, workspace, run );
+    }
+
+    protected void runEmbeddedLoadGenerator( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
+        throws Exception
+    {
 
         ResourceProfile resourceProfile =
             this.loadProfile == null ? loadResourceProfile( workspace ) : this.loadProfile;
@@ -325,12 +329,17 @@ public class LoadGeneratorBuilder
         //.requestListeners( testRequestListener ) //
         //.executor( new QueuedThreadPool() )
 
-        if (secureProtocol) {
+        if ( secureProtocol )
+        {
             // well that's an easy accept everything one...
             builder.sslContextFactory( new SslContextFactory( true ) );
         }
 
         LoadGenerator loadGenerator = builder.build();
+
+        //ObjectMapper objectMapper = new ObjectMapper(  );
+
+        //objectMapper.writeValue( new File( "text.out.json" ), loadGenerator );
 
         if ( runIteration > 0 )
         {
@@ -388,8 +397,10 @@ public class LoadGeneratorBuilder
                                                      summaryReport, //
                                                      new CollectorInformations(
                                                          globalSummaryReportListener.getHistogram() ), //
-                                                     perPath, allResponseInfoTimePerPath, run ));
+                                                     perPath, allResponseInfoTimePerPath, run ) );
+
         LOGGER.debug( "end" );
+
     }
 
 
@@ -457,7 +468,8 @@ public class LoadGeneratorBuilder
         return (DescriptorImpl) super.getDescriptor();
     }
 
-    @Extension @Symbol("loadgenerator")
+    @Extension
+    @Symbol( "loadgenerator" )
     public static final class DescriptorImpl
         extends BuildStepDescriptor<Builder>
     {
