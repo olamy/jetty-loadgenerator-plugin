@@ -20,6 +20,7 @@ package com.webtide.jetty.load.generator.jenkins;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.Actionable;
 import hudson.model.HealthReport;
+import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
@@ -60,7 +61,8 @@ public class LoadGeneratorProjectAction
         // well that's weird but can happen especially with pipeline...
         if (project != null)
         {
-            Run lastBuild = project.getLastBuild();
+            Run lastBuild = forceProjectLoad( project );
+
             if ( lastBuild != null )
             {
                 LoadGeneratorBuildAction loadGeneratorBuildAction = lastBuild.getAction( LoadGeneratorBuildAction.class );
@@ -70,6 +72,31 @@ public class LoadGeneratorProjectAction
                     this.summaryReport = loadGeneratorBuildAction.getSummaryReport();
                     this.globalCollectorInformations = loadGeneratorBuildAction.getGlobalCollectorInformations();
                 }
+            }
+        }
+    }
+
+    /**
+     *
+     * @param project
+     * @return the last build or null
+     */
+    private Run forceProjectLoad( Job<?, ?> project ) {
+        try
+        {
+            return project.getLastBuild();
+        }
+        catch ( Exception e )
+        {
+            try
+            {
+                project.onLoad( Hudson.getActiveInstance(), project.getName() );
+                return project.getLastBuild();
+            }
+            catch ( Exception e1 )
+            {
+                // we cannot load it so ignore yup I know that's really hackhish here :-)
+                return null;
             }
         }
     }

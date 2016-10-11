@@ -62,9 +62,10 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getRunIteration(), //
                                                                  loadGeneratorBuilderStep.getTransactionRate(), //
                                                                  loadGeneratorBuilderStep.getTransport(), //
-                                                                 loadGeneratorBuilderStep.isSecureProtocol() );
+                                                                 loadGeneratorBuilderStep.isSecureProtocol(), //
+                                                                 loadGeneratorBuilderStep.isEmbeddedLoadGenerator() );
 
-        builder.doRun( taskListener, filePath, run );
+        builder.doRun( taskListener, filePath, run, launcher );
 
         return null;
     }

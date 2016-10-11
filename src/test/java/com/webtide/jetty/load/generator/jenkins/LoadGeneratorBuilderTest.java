@@ -104,7 +104,7 @@ public class LoadGeneratorBuilderTest
         LoadGeneratorBuilder loadGeneratorBuilder =
             new LoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
                                       1, "", 20, TimeUnit.SECONDS, //
-                                      iteration, 1, LoadGenerator.Transport.HTTP, false );
+                                      iteration, 1, LoadGenerator.Transport.HTTP, false, true );
 
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 

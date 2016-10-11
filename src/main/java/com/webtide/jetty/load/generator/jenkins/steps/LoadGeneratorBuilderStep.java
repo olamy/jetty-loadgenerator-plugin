@@ -26,6 +26,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -44,22 +45,36 @@ public class LoadGeneratorBuilderStep
 {
 
     private ResourceProfile resourceProfile;
+
     private String host;
+
     private int port;
+
     private int users;
+
     private String profileXmlFromFile;
+
     private int runningTime;
+
     private TimeUnit runningTimeUnit;
+
     private int runIteration;
+
     private int transactionRate;
+
     private LoadGenerator.Transport transport;
+
     private boolean secureProtocol;
+
+    private boolean embeddedLoadGenerator;
+
+    private String jdkName;
 
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
                                      String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit,
                                      int runIteration, int transactionRate, LoadGenerator.Transport transport,
-                                     boolean secureProtocol )
+                                     boolean secureProtocol, boolean embeddedLoadGenerator )
     {
         this.resourceProfile = resourceProfile;
         this.host = host;
@@ -72,6 +87,7 @@ public class LoadGeneratorBuilderStep
         this.transactionRate = transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public ResourceProfile getResourceProfile()
@@ -127,6 +143,17 @@ public class LoadGeneratorBuilderStep
     public boolean isSecureProtocol()
     {
         return secureProtocol;
+    }
+
+    public boolean isEmbeddedLoadGenerator()
+    {
+        return embeddedLoadGenerator;
+    }
+
+    @DataBoundSetter
+    public void setJdkName( String jdkName )
+    {
+        this.jdkName = jdkName;
     }
 
     @Extension

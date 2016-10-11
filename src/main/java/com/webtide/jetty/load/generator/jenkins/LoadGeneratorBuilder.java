@@ -17,27 +17,38 @@
 
 package com.webtide.jetty.load.generator.jenkins;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Proc;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Executor;
 import hudson.model.HealthReport;
+import hudson.model.JDK;
+import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Which;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
 import jenkins.tasks.SimpleBuildStep;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.ant.Project;
+import org.apache.tools.ant.taskdefs.Zip;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -54,17 +65,24 @@ import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
+import org.eclipse.jetty.load.generator.starter.LoadGeneratorStarter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -113,13 +131,18 @@ public class LoadGeneratorBuilder
 
     private LoadGenerator.Transport transport;
 
+    private boolean embeddedLoadGenerator = true;
+
     private boolean secureProtocol;
+
+    private String jdkName;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
                                  int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
-                                 LoadGenerator.Transport transport, boolean secureProtocol )
+                                 LoadGenerator.Transport transport, boolean secureProtocol,
+                                 boolean embeddedLoadGenerator )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -132,11 +155,13 @@ public class LoadGeneratorBuilder
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users,
                                  String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit, int runIteration,
-                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol )
+                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol,
+                                 boolean embeddedLoadGenerator )
     {
         this.profileGroovy = null;
         this.loadProfile = resourceProfile;
@@ -150,6 +175,7 @@ public class LoadGeneratorBuilder
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public String getProfileGroovy()
@@ -222,12 +248,28 @@ public class LoadGeneratorBuilder
         return secureProtocol;
     }
 
+    public boolean isEmbeddedLoadGenerator()
+    {
+        return embeddedLoadGenerator;
+    }
+
+    public String getJdkName()
+    {
+        return jdkName;
+    }
+
+    @DataBoundSetter
+    public void setJdkName( String jdkName )
+    {
+        this.jdkName = jdkName;
+    }
+
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
         try
         {
-            doRun( listener, build.getWorkspace(), build.getRootBuild() );
+            doRun( listener, build.getWorkspace(), build.getRootBuild(), launcher );
         }
         catch ( Exception e )
         {
@@ -246,7 +288,7 @@ public class LoadGeneratorBuilder
 
         try
         {
-            doRun( taskListener, filePath, run );
+            doRun( taskListener, filePath, run, launcher );
         }
         catch ( Exception e )
         {
@@ -255,13 +297,7 @@ public class LoadGeneratorBuilder
     }
 
 
-    public void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
-        throws Exception
-    {
-        runEmbeddedLoadGenerator( taskListener, workspace, run );
-    }
-
-    protected void runEmbeddedLoadGenerator( TaskListener taskListener, FilePath workspace, Run<?, ?> run )
+    public void doRun( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher )
         throws Exception
     {
 
@@ -275,6 +311,151 @@ public class LoadGeneratorBuilder
             run.setResult( Result.ABORTED );
             return;
         }
+
+        if ( this.embeddedLoadGenerator )
+        {
+            runEmbeddedLoadGenerator( taskListener, workspace, run, resourceProfile );
+        }
+        else
+        {
+            runForked( taskListener, workspace, run, launcher, resourceProfile );
+        }
+    }
+
+    protected void runForked( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher,
+                              ResourceProfile resourceProfile )
+        throws Exception
+    {
+        boolean isMaster = getCurrentNode() == Jenkins.getInstance();
+        FilePath slaveRoot = null;
+        if ( !isMaster )
+        {
+            slaveRoot = getCurrentNode().getRootPath();
+        }
+
+        final String tmpFilePath = getCurrentNode().getChannel().call( new CopyResourceProfile( resourceProfile ) );
+
+        ArgumentListBuilder cmdLine = new ArgumentListBuilder();
+
+        if ( jdkName != null )
+        {
+            JDK jdk = Jenkins.getInstance().getJDK( this.jdkName ).forNode( getCurrentNode(), taskListener );
+            String jdkHome = jdk.getHome();
+            LOGGER.debug( "jdkHome: {}", jdkHome );
+            cmdLine.add( jdk.getHome() + "/bin/java" ); // use JDK.getExecutable() here ?
+        }
+        else
+        {
+            cmdLine.add( "java" );
+        }
+
+        String starterPath =
+            classPathEntry( slaveRoot, LoadGeneratorStarter.class, "jetty-load-generator-starter", taskListener );
+        LOGGER.debug( "starterPath: {}", starterPath );
+
+        cmdLine.add( "-jar" );
+
+        cmdLine.add( starterPath );
+
+        //cmdLine.add( "-pjp" ).add( tmpFilePath );
+        cmdLine.add( "-h" ).add( host );
+        cmdLine.add( "-p" ).add( port );
+
+        if ( runIteration > 0 )
+        {
+            cmdLine.add( "-ri" ).add( runIteration );
+        }
+        else
+        {
+            cmdLine.add( "-rt" ).add( runningTime );
+            cmdLine.add( "-rtu" );
+            switch ( this.runningTimeUnit )
+            {
+                case HOURS:
+                    cmdLine.add( "h" );
+                    break;
+                case MINUTES:
+                    cmdLine.add( "m" );
+                    break;
+                case SECONDS:
+                    cmdLine.add( "s" );
+                    break;
+                case MILLISECONDS:
+                    cmdLine.add( "ms" );
+                    break;
+                default:
+                    throw new IllegalArgumentException( runningTimeUnit + " is not recognized" );
+            }
+        }
+
+        String[] cmds = cmdLine.toCommandArray();
+        final Proc proc =  getCurrentNode().createLauncher( taskListener ).launch(  ).cmds( cmdLine ).start();
+        // final Proc proc =  launcher.launch().cmds( cmds ).stdout( taskListener ).start();
+
+        while ( proc.isAlive() )
+        {
+            Thread.sleep( 1 );
+        }
+
+        // deleting tmp file
+        getCurrentNode().getChannel().call( new DeleteTmpFile(tmpFilePath) );
+        LOGGER.debug( "finish" );
+
+
+
+
+    }
+
+
+    private static class CopyResourceProfile
+        extends MasterToSlaveCallable<String, IOException>
+    {
+        private ResourceProfile resourceProfile;
+
+        public CopyResourceProfile( ResourceProfile resourceProfile )
+        {
+            this.resourceProfile = resourceProfile;
+        }
+
+        @Override
+        public String call()
+            throws IOException
+        {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Path tmpPath = Files.createTempFile( "profile", ".tmp" );
+            objectMapper.writeValue( tmpPath.toFile(), resourceProfile );
+            return tmpPath.toString();
+        }
+    }
+
+    private static class DeleteTmpFile
+        extends MasterToSlaveCallable<Void, IOException>
+    {
+        private String filePath;
+
+        public DeleteTmpFile( String filePath )
+        {
+            this.filePath = filePath;
+        }
+
+        @Override
+        public Void call()
+            throws IOException
+        {
+            Path path = Paths.get( filePath );
+            if ( Files.exists( path ) )
+            {
+                Files.delete( path );
+            }
+
+            return null;
+        }
+    }
+
+    protected void runEmbeddedLoadGenerator( TaskListener taskListener, FilePath workspace, Run<?, ?> run,
+                                             ResourceProfile resourceProfile )
+        throws Exception
+    {
 
         ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
@@ -315,6 +496,7 @@ public class LoadGeneratorBuilder
             } );
 
         }
+
         //ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool( 1);
 
         LoadGenerator.Builder builder = new LoadGenerator.Builder() //
@@ -499,6 +681,10 @@ public class LoadGeneratorBuilder
             return TIME_UNITS;
         }
 
+        public List<JDK> getJdks()
+        {
+            return Jenkins.getInstance().getJDKs();
+        }
 
         public List<LoadGenerator.Transport> getTransports()
         {
@@ -596,6 +782,62 @@ public class LoadGeneratorBuilder
             return super.configure( req, formData );
         }*/
 
+    }
+
+
+    protected final String classPathEntry( FilePath root, Class<?> representative, String seedName,
+                                           TaskListener listener )
+        throws IOException, InterruptedException
+    {
+        if ( root == null )
+        { // master
+            return Which.jarFile( representative ).getAbsolutePath();
+        }
+        else
+        {
+            return copyJar( listener.getLogger(), root, representative, seedName ).getRemote();
+        }
+    }
+
+    /**
+     * Copies a jar file from the master to slave.
+     */
+    static FilePath copyJar( PrintStream log, FilePath dst, Class<?> representative, String seedName )
+        throws IOException, InterruptedException
+    {
+        // in normal execution environment, the master should be loading 'representative' from this jar, so
+        // in that way we can find it.
+        File jar = Which.jarFile( representative );
+        FilePath copiedJar = dst.child( seedName + ".jar" );
+
+        if ( jar.isDirectory() )
+        {
+            // but during the development and unit test environment, we may be picking the class up from the classes dir
+            Zip zip = new Zip();
+            zip.setBasedir( jar );
+            File t = File.createTempFile( seedName, "jar" );
+            t.delete();
+            zip.setDestFile( t );
+            zip.setProject( new Project() );
+            zip.execute();
+            jar = t;
+        }
+        else if ( copiedJar.exists() && copiedJar.digest().equals( Util.getDigestOf( jar ) ) )
+        {
+            log.println( seedName + ".jar already up to date" );
+            return copiedJar;
+        }
+
+        // Theoretically could be a race condition on a multi-executor Windows slave; symptom would be an IOException during the build.
+        // Could perhaps be solved by synchronizing on dst.getChannel() or similar.
+        new FilePath( jar ).copyTo( copiedJar );
+        log.println( "Copied " + seedName + ".jar" );
+        return copiedJar;
+    }
+
+    protected Node getCurrentNode()
+    {
+        return Executor.currentExecutor().getOwner().getNode();
     }
 
 }
