@@ -26,6 +26,7 @@
     <jackson2-version>2.7.5</jackson2-version>
     <jetty-93-version>9.3.12.v20160915</jetty-93-version>
     <jetty.version>9.3.12-SNAPSHOT</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
+    <loadgenerator.debugPort>-1</loadgenerator.debugPort>
   </properties>
 
   <scm>
@@ -84,6 +85,16 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson2-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lmax</groupId>
+      <artifactId>disruptor</artifactId>
+      <version>3.3.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.4</version>
     </dependency>
     <dependency>
       <groupId>org.hdrhistogram</groupId>
@@ -150,6 +161,9 @@
               <hudson>FINE</hudson>
             </loggers>
             -->
+            <systemProperties>
+              <loadgenerator.debugPort>${loadgenerator.debugPort}</loadgenerator.debugPort>
+            </systemProperties>
             <jenkinsHome>${project.basedir}/.work</jenkinsHome>
             <consoleForceReload>false</consoleForceReload>
             <disabledTestInjection>true</disabledTestInjection>

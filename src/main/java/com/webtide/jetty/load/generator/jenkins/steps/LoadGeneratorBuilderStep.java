@@ -66,15 +66,13 @@ public class LoadGeneratorBuilderStep
 
     private boolean secureProtocol;
 
-    private boolean embeddedLoadGenerator;
-
     private String jdkName;
 
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
                                      String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit,
                                      int runIteration, int transactionRate, LoadGenerator.Transport transport,
-                                     boolean secureProtocol, boolean embeddedLoadGenerator )
+                                     boolean secureProtocol )
     {
         this.resourceProfile = resourceProfile;
         this.host = host;
@@ -87,7 +85,6 @@ public class LoadGeneratorBuilderStep
         this.transactionRate = transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
-        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public ResourceProfile getResourceProfile()
@@ -143,11 +140,6 @@ public class LoadGeneratorBuilderStep
     public boolean isSecureProtocol()
     {
         return secureProtocol;
-    }
-
-    public boolean isEmbeddedLoadGenerator()
-    {
-        return embeddedLoadGenerator;
     }
 
     @DataBoundSetter

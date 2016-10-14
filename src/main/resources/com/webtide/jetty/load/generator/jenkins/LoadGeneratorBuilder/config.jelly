@@ -44,9 +44,6 @@
     <f:textbox />
   </f:entry>
   <f:advanced>
-    <f:entry title="${%Run Embedded LoadGenerator}">
-      <f:checkbox name="embeddedLoadGenerator" checked="${instance.embeddedLoadGenerator}" default="true" />
-    </f:entry>
     <f:entry title="${%JDK}">
       <select class="setting-input" name="jdkName">
         <j:forEach var="s" items="${descriptor.jdks}">

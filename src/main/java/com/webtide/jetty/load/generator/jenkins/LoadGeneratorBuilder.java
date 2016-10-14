@@ -18,6 +18,10 @@
 package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.RingBuffer;
+import com.lmax.disruptor.dsl.Disruptor;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Extension;
@@ -35,6 +39,8 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.Channel;
+import hudson.remoting.DelegatingCallable;
 import hudson.remoting.Which;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -42,9 +48,12 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
+import jenkins.security.SlaveToMasterCallable;
 import jenkins.tasks.SimpleBuildStep;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tools.ant.Project;
@@ -57,6 +66,7 @@ import org.eclipse.jetty.load.generator.Http2TransportBuilder;
 import org.eclipse.jetty.load.generator.HttpFCGITransportBuilder;
 import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
+import org.eclipse.jetty.load.generator.ValueListener;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
@@ -77,9 +87,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,6 +100,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -131,8 +145,6 @@ public class LoadGeneratorBuilder
 
     private LoadGenerator.Transport transport;
 
-    private boolean embeddedLoadGenerator = true;
-
     private boolean secureProtocol;
 
     private String jdkName;
@@ -141,8 +153,7 @@ public class LoadGeneratorBuilder
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
                                  int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
-                                 LoadGenerator.Transport transport, boolean secureProtocol,
-                                 boolean embeddedLoadGenerator )
+                                 LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -155,13 +166,11 @@ public class LoadGeneratorBuilder
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
-        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users,
                                  String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit, int runIteration,
-                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol,
-                                 boolean embeddedLoadGenerator )
+                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = null;
         this.loadProfile = resourceProfile;
@@ -175,7 +184,6 @@ public class LoadGeneratorBuilder
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
-        this.embeddedLoadGenerator = embeddedLoadGenerator;
     }
 
     public String getProfileGroovy()
@@ -248,11 +256,6 @@ public class LoadGeneratorBuilder
         return secureProtocol;
     }
 
-    public boolean isEmbeddedLoadGenerator()
-    {
-        return embeddedLoadGenerator;
-    }
-
     public String getJdkName()
     {
         return jdkName;
@@ -312,52 +315,165 @@ public class LoadGeneratorBuilder
             return;
         }
 
-        if ( this.embeddedLoadGenerator )
-        {
-            runEmbeddedLoadGenerator( taskListener, workspace, run, resourceProfile );
-        }
-        else
-        {
-            runForked( taskListener, workspace, run, launcher, resourceProfile );
-        }
+        runProcess( taskListener, workspace, run, launcher, resourceProfile );
+
     }
 
-    protected void runForked( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher,
-                              ResourceProfile resourceProfile )
+    protected void runProcess( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher,
+                               ResourceProfile resourceProfile )
         throws Exception
     {
-        boolean isMaster = getCurrentNode() == Jenkins.getInstance();
-        FilePath slaveRoot = null;
-        if ( !isMaster )
+
+        List<ResponseTimeListener> listeners = new ArrayList<>();
+        if ( this.responseTimeListeners != null )
         {
-            slaveRoot = getCurrentNode().getRootPath();
+            listeners.addAll( this.responseTimeListeners );
         }
+
+        // TODO remove that one which is for debug purpose
+        if ( LOGGER.isDebugEnabled() )
+        {
+            listeners.add( new ResponseTimeListener()
+            {
+                @Override
+                public void onResponseTimeValue( Values values )
+                {
+                    LOGGER.debug( "response time {} ms for path: {}", //
+                                  TimeUnit.NANOSECONDS.toMillis( values.getTime() ), //
+                                  values.getPath() );
+                }
+
+                @Override
+                public void onLoadGeneratorStop()
+                {
+                    LOGGER.debug( "stop loadGenerator" );
+                }
+            } );
+
+        }
+
+        Path resultFilePath = launcher.getChannel().call( new MasterToSlaveCallable<Path, IOException>()
+        {
+            @Override
+            public Path call()
+                throws IOException
+            {
+                return Files.createTempFile( "loadgenerator_result", ".csv" );
+            }
+        } );
+
+        ResponseTimeFileWriter responseTimeFileWriter = new ResponseTimeFileWriter( resultFilePath );
+        listeners.add( responseTimeFileWriter );
+
+        List<String> args = getArgsProcess( resourceProfile );
+
+        new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
+                                                     this.jdkName, getCurrentNode(), //
+                                                     listeners, args );
+
+        // handle reports
+
+        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
+        ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
+        GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
+        // this one will use some memory for a long load test!!
+        // FIXME find a way to flush that somewhere!!
+        DetailledResponseTimeReportListener detailledResponseTimeReportListener =
+            new DetailledResponseTimeReportListener();
+
+        listeners.clear();
+        listeners.add( responseNumberPerPath );
+        listeners.add( responseTimePerPath );
+        listeners.add( globalSummaryReportListener );
+        listeners.add( detailledResponseTimeReportListener );
+
+        // get remote file
+
+        Path localResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
+
+        workspace.child( resultFilePath.toString() ).copyTo( Files.newOutputStream( localResultFile ) );
+
+        CSVParser csvParser = new CSVParser( Files.newBufferedReader( localResultFile ), CSVFormat.newFormat( '|' ) );
+
+        csvParser.forEach(
+            strings ->
+            {
+                ValueListener.Values values = new ValueListener.Values() //
+                    .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
+                    .method( strings.get( 1 ) ) //
+                    .path( strings.get( 2 ) ) //
+                    .time( Long.parseLong( strings.get( 3 ) ) ) //
+                    .status( Integer.parseInt( strings.get( 4 ) ) ) //
+                    .size( Long.parseLong( strings.get( 5 ) ) );
+                for (ResponseTimeListener listener : listeners)
+                {
+                    listener.onResponseTimeValue( values );
+                }
+            } );
+
+        //FilePath projectWorkspaceOnSlave = build.getProject().getWorkspace();
+
+        // manage results
+
+        SummaryReport summaryReport = new SummaryReport();
+
+        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getRecorderPerPath().size() );
+
+        for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getRecorderPerPath().entrySet() )
+        {
+            String path = entry.getKey();
+            Histogram histogram = entry.getValue().getIntervalHistogram();
+            perPath.put( entry.getKey(), new CollectorInformations( histogram ) );
+            AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
+            LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
+                          path, //
+                          TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
+                          number.get() );
+            summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
+        }
+
+        // TODO calculate score from previous build
+        HealthReport healthReport = new HealthReport( 30, "text" );
+
+        Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
+
+        for ( DetailledResponseTimeReport.Entry entry : detailledResponseTimeReportListener.getDetailledResponseTimeReport().getEntries() )
+        {
+            List<ResponseTimeInfo> responseTimeInfos = allResponseInfoTimePerPath.get( entry.getPath() );
+            if ( responseTimeInfos == null )
+            {
+                responseTimeInfos = new ArrayList<>();
+                allResponseInfoTimePerPath.put( entry.getPath(), responseTimeInfos );
+            }
+            responseTimeInfos.add( new ResponseTimeInfo( entry.getTimeStamp(), //
+                                                         TimeUnit.NANOSECONDS.toMillis( entry.getTime() ) ) );
+
+        }
+
+        run.addAction( new LoadGeneratorBuildAction( healthReport, //
+                                                     summaryReport, //
+                                                     new CollectorInformations(
+                                                         globalSummaryReportListener.getHistogram() ), //
+                                                     perPath, allResponseInfoTimePerPath, run ) );
+
+        // cleanup
+
+        getCurrentNode().getChannel().call( new DeleteTmpFile( resultFilePath.toString() ) );
+        Files.deleteIfExists( localResultFile );
+
+        LOGGER.debug( "end" );
+    }
+
+
+    protected List<String> getArgsProcess( ResourceProfile resourceProfile )
+        throws Exception
+    {
 
         final String tmpFilePath = getCurrentNode().getChannel().call( new CopyResourceProfile( resourceProfile ) );
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
-        if ( jdkName != null )
-        {
-            JDK jdk = Jenkins.getInstance().getJDK( this.jdkName ).forNode( getCurrentNode(), taskListener );
-            String jdkHome = jdk.getHome();
-            LOGGER.debug( "jdkHome: {}", jdkHome );
-            cmdLine.add( jdk.getHome() + "/bin/java" ); // use JDK.getExecutable() here ?
-        }
-        else
-        {
-            cmdLine.add( "java" );
-        }
-
-        String starterPath =
-            classPathEntry( slaveRoot, LoadGeneratorStarter.class, "jetty-load-generator-starter", taskListener );
-        LOGGER.debug( "starterPath: {}", starterPath );
-
-        cmdLine.add( "-jar" );
-
-        cmdLine.add( starterPath );
-
-        //cmdLine.add( "-pjp" ).add( tmpFilePath );
+        cmdLine.add( "-pjp" ).add( tmpFilePath );
         cmdLine.add( "-h" ).add( host );
         cmdLine.add( "-p" ).add( port );
 
@@ -388,26 +504,15 @@ public class LoadGeneratorBuilder
             }
         }
 
-        String[] cmds = cmdLine.toCommandArray();
-        final Proc proc =  getCurrentNode().createLauncher( taskListener ).launch(  ).cmds( cmdLine ).start();
-        // final Proc proc =  launcher.launch().cmds( cmds ).stdout( taskListener ).start();
-
-        while ( proc.isAlive() )
-        {
-            Thread.sleep( 1 );
-        }
-
-        // deleting tmp file
-        getCurrentNode().getChannel().call( new DeleteTmpFile(tmpFilePath) );
+        // FIXME deleting tmp file
+        // getCurrentNode().getChannel().call( new DeleteTmpFile( tmpFilePath ) );
         LOGGER.debug( "finish" );
-
-
-
+        return cmdLine.toList();
 
     }
 
 
-    private static class CopyResourceProfile
+    static class CopyResourceProfile
         extends MasterToSlaveCallable<String, IOException>
     {
         private ResourceProfile resourceProfile;
@@ -452,156 +557,6 @@ public class LoadGeneratorBuilder
         }
     }
 
-    protected void runEmbeddedLoadGenerator( TaskListener taskListener, FilePath workspace, Run<?, ?> run,
-                                             ResourceProfile resourceProfile )
-        throws Exception
-    {
-
-        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
-        ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
-        GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
-        // this one will use some memory for a long load test!!
-        // FIXME find a way to flush that somewhere!!
-        DetailledResponseTimeReportListener detailledResponseTimeReportListener =
-            new DetailledResponseTimeReportListener();
-
-        List<ResponseTimeListener> listeners = new ArrayList<>();
-        if ( this.responseTimeListeners != null )
-        {
-            listeners.addAll( this.responseTimeListeners );
-        }
-        listeners.add( responseTimePerPath );
-        listeners.add( responseNumberPerPath );
-        listeners.add( globalSummaryReportListener );
-        listeners.add( detailledResponseTimeReportListener );
-
-        // TODO remove that one which is for debug purpose
-        if ( LOGGER.isDebugEnabled() )
-        {
-            listeners.add( new ResponseTimeListener()
-            {
-                @Override
-                public void onResponseTimeValue( Values values )
-                {
-                    LOGGER.debug( "response time {} ms for path: {}", //
-                                  TimeUnit.NANOSECONDS.toMillis( values.getTime() ), //
-                                  values.getPath() );
-                }
-
-                @Override
-                public void onLoadGeneratorStop()
-                {
-                    LOGGER.debug( "stop loadGenerator" );
-                }
-            } );
-
-        }
-
-        //ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool( 1);
-
-        LoadGenerator.Builder builder = new LoadGenerator.Builder() //
-            .host( getHost() ) //
-            .port( getPort() ) //
-            .users( getUsers() ) //
-            .transactionRate( getTransactionRate() ) //
-            .transport( getTransport() ) //
-            .httpClientTransport( httpClientTransport() ) //
-            .loadProfile( resourceProfile ) //
-            .responseTimeListeners( listeners.toArray( new ResponseTimeListener[listeners.size()] ) ); //
-        //.requestListeners( testRequestListener ) //
-        //.executor( new QueuedThreadPool() )
-
-        if ( secureProtocol )
-        {
-            // well that's an easy accept everything one...
-            builder.sslContextFactory( new SslContextFactory( true ) );
-        }
-
-        LoadGenerator loadGenerator = builder.build();
-
-        //ObjectMapper objectMapper = new ObjectMapper(  );
-
-        //objectMapper.writeValue( new File( "text.out.json" ), loadGenerator );
-
-        if ( runIteration > 0 )
-        {
-            taskListener.getLogger().println(
-                "starting " + runIteration + " iterations, load generator to host " + host + " with port " + port );
-            loadGenerator.run( runIteration );
-            LOGGER.info( "host: {}, port: {}", getHost(), getPort() );
-        }
-        else
-        {
-            taskListener.getLogger().println( "starting for " + runningTime + " " + runningTimeUnit.toString()
-                                                  + " iterations, load generator to host " + host + " with port "
-                                                  + port );
-            loadGenerator.run( runningTime, runningTimeUnit );
-        }
-
-        taskListener.getLogger().println( "load generator stopped, enjoy your results!!" );
-
-        SummaryReport summaryReport = new SummaryReport();
-
-        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getRecorderPerPath().size() );
-
-        for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getRecorderPerPath().entrySet() )
-        {
-            String path = entry.getKey();
-            Histogram histogram = entry.getValue().getIntervalHistogram();
-            perPath.put( entry.getKey(), new CollectorInformations( histogram ) );
-            AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
-            LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
-                          path, //
-                          TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
-                          number.get() );
-            summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
-        }
-
-        // TODO calculate score from previous build
-        HealthReport healthReport = new HealthReport( 30, "text" );
-
-        Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
-
-        for ( DetailledResponseTimeReport.Entry entry : detailledResponseTimeReportListener.getDetailledResponseTimeReport().getEntries() )
-        {
-            List<ResponseTimeInfo> responseTimeInfos = allResponseInfoTimePerPath.get( entry.getPath() );
-            if ( responseTimeInfos == null )
-            {
-                responseTimeInfos = new ArrayList<>();
-                allResponseInfoTimePerPath.put( entry.getPath(), responseTimeInfos );
-            }
-            responseTimeInfos.add( new ResponseTimeInfo( entry.getTimeStamp(), //
-                                                         TimeUnit.NANOSECONDS.toMillis( entry.getTime() ) ) );
-
-        }
-
-        run.addAction( new LoadGeneratorBuildAction( healthReport, //
-                                                     summaryReport, //
-                                                     new CollectorInformations(
-                                                         globalSummaryReportListener.getHistogram() ), //
-                                                     perPath, allResponseInfoTimePerPath, run ) );
-
-        LOGGER.debug( "end" );
-
-    }
-
-
-    protected HttpClientTransport httpClientTransport()
-    {
-        switch ( getTransport() )
-        {
-            case HTTP:
-            case HTTPS:
-                return new HttpTransportBuilder().build();
-            case H2:
-            case H2C:
-                return new Http2TransportBuilder().build();
-            case FCGI:
-                return new HttpFCGITransportBuilder().build();
-
-        }
-        throw new IllegalArgumentException( "unknown transport: " + getTransport() );
-    }
 
     protected ResourceProfile loadResourceProfile( FilePath workspace )
         throws Exception
@@ -641,6 +596,178 @@ public class LoadGeneratorBuilder
         }
 
         return resourceProfile;
+    }
+
+
+
+
+
+    static String classPathEntry( FilePath root, Class<?> representative, String seedName, TaskListener listener )
+        throws IOException, InterruptedException
+    {
+        if ( root == null )
+        { // master
+            return Which.jarFile( representative ).getAbsolutePath();
+        }
+        else
+        {
+            return copyJar( listener.getLogger(), root, representative, seedName ).getRemote();
+        }
+    }
+
+    /**
+     * Copies a jar file from the master to slave.
+     */
+    static FilePath copyJar( PrintStream log, FilePath dst, Class<?> representative, String seedName )
+        throws IOException, InterruptedException
+    {
+        // in normal execution environment, the master should be loading 'representative' from this jar, so
+        // in that way we can find it.
+        File jar = Which.jarFile( representative );
+        FilePath copiedJar = dst.child( seedName + ".jar" );
+
+        if ( jar.isDirectory() )
+        {
+            // but during the development and unit test environment, we may be picking the class up from the classes dir
+            Zip zip = new Zip();
+            zip.setBasedir( jar );
+            File t = File.createTempFile( seedName, "jar" );
+            t.delete();
+            zip.setDestFile( t );
+            zip.setProject( new Project() );
+            zip.execute();
+            jar = t;
+        }
+        else if ( copiedJar.exists() && copiedJar.digest().equals( Util.getDigestOf( jar ) ) )
+        {
+            log.println( seedName + ".jar already up to date" );
+            return copiedJar;
+        }
+
+        // Theoretically could be a race condition on a multi-executor Windows slave; symptom would be an IOException during the build.
+        // Could perhaps be solved by synchronizing on dst.getChannel() or similar.
+        new FilePath( jar ).copyTo( copiedJar );
+        log.println( "Copied " + seedName + ".jar" );
+        return copiedJar;
+    }
+
+    protected Node getCurrentNode()
+    {
+        return Executor.currentExecutor().getOwner().getNode();
+    }
+
+
+    static class ResponseTimeFileWriter
+        implements ResponseTimeListener, Serializable, EventHandler<ValueListener.Values>,
+        EventFactory<ValueListener.Values>
+    {
+
+        private final String filePath;
+
+        private transient BufferedWriter bufferedWriter;
+
+        private transient RingBuffer<Values> ringBuffer;
+
+        public ResponseTimeFileWriter( Path path )
+        {
+            try
+            {
+                this.filePath = path.toAbsolutePath().toString();
+                this.bufferedWriter = Files.newBufferedWriter( path );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e.getMessage(), e );
+            }
+
+        }
+
+        @Override
+        public void onResponseTimeValue( Values values )
+        {
+            this.ringBuffer.publishEvent( ( event, sequence ) -> event.eventTimestamp( values.getEventTimestamp() ) //
+                .method( values.getMethod() ) //
+                .path( values.getPath() ) //
+                .time( values.getTime() ) //
+                .status( values.getStatus() ) //
+                .size( values.getSize() ) );
+        }
+
+        public Object readResolve()
+        {
+            try
+            {
+                this.bufferedWriter = Files.newBufferedWriter( Paths.get( this.filePath ) );
+
+                // Executor that will be used to construct new threads for consumers
+                ExecutorService executor = Executors.newCachedThreadPool();
+
+                // Specify the size of the ring buffer, must be power of 2.
+                int bufferSize = 1024;
+
+                // Construct the Disruptor
+                Disruptor<Values> disruptor = new Disruptor<>( this, bufferSize, executor );
+
+                // Connect the handler
+                disruptor.handleEventsWith( this );
+
+                // Start the Disruptor, starts all threads running
+                disruptor.start();
+
+                this.ringBuffer = disruptor.getRingBuffer();
+
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( e.getMessage(), e );
+            }
+            return this;
+        }
+
+        @Override
+        public void onEvent( Values values, long l, boolean b )
+            throws Exception
+        {
+            try
+            {
+                StringBuilder sb = new StringBuilder( 128 ) //
+                    .append( values.getEventTimestamp() ).append( '|' ) //
+                    .append( values.getMethod() ).append( '|' ) //
+                    .append( values.getPath() ).append( '|' ) //
+                    .append( values.getTime() ).append( '|' ) //
+                    .append( values.getStatus() ).append( '|' ) //
+                    .append( values.getSize() );
+
+                this.bufferedWriter.write( sb.toString() + System.lineSeparator() );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public Values newInstance()
+        {
+            return new Values();
+        }
+
+
+        @Override
+        public void onLoadGeneratorStop()
+        {
+            try
+            {
+                this.bufferedWriter.flush();
+                this.bufferedWriter.close();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e.getMessage(), e );
+            }
+            System.out.println( "stop loadGenerator" );
+        }
+
     }
 
 
@@ -782,62 +909,6 @@ public class LoadGeneratorBuilder
             return super.configure( req, formData );
         }*/
 
-    }
-
-
-    protected final String classPathEntry( FilePath root, Class<?> representative, String seedName,
-                                           TaskListener listener )
-        throws IOException, InterruptedException
-    {
-        if ( root == null )
-        { // master
-            return Which.jarFile( representative ).getAbsolutePath();
-        }
-        else
-        {
-            return copyJar( listener.getLogger(), root, representative, seedName ).getRemote();
-        }
-    }
-
-    /**
-     * Copies a jar file from the master to slave.
-     */
-    static FilePath copyJar( PrintStream log, FilePath dst, Class<?> representative, String seedName )
-        throws IOException, InterruptedException
-    {
-        // in normal execution environment, the master should be loading 'representative' from this jar, so
-        // in that way we can find it.
-        File jar = Which.jarFile( representative );
-        FilePath copiedJar = dst.child( seedName + ".jar" );
-
-        if ( jar.isDirectory() )
-        {
-            // but during the development and unit test environment, we may be picking the class up from the classes dir
-            Zip zip = new Zip();
-            zip.setBasedir( jar );
-            File t = File.createTempFile( seedName, "jar" );
-            t.delete();
-            zip.setDestFile( t );
-            zip.setProject( new Project() );
-            zip.execute();
-            jar = t;
-        }
-        else if ( copiedJar.exists() && copiedJar.digest().equals( Util.getDigestOf( jar ) ) )
-        {
-            log.println( seedName + ".jar already up to date" );
-            return copiedJar;
-        }
-
-        // Theoretically could be a race condition on a multi-executor Windows slave; symptom would be an IOException during the build.
-        // Could perhaps be solved by synchronizing on dst.getChannel() or similar.
-        new FilePath( jar ).copyTo( copiedJar );
-        log.println( "Copied " + seedName + ".jar" );
-        return copiedJar;
-    }
-
-    protected Node getCurrentNode()
-    {
-        return Executor.currentExecutor().getOwner().getNode();
     }
 
 }

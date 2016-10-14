@@ -32,9 +32,6 @@
   <f:entry title="${%Secured Protocol}">
     <f:checkbox name="secureProtocol" checked="${instance.secureProtocol}" default="false" />
   </f:entry>
-  <f:entry title="${%Run Embedded LoadGenerator}">
-    <f:checkbox name="embeddedLoadGenerator" checked="${instance.embeddedLoadGenerator}" default="true" />
-  </f:entry>
   <f:entry title="${%Running Time Unit}">
     <select class="setting-input" name="runningTimeUnit">
       <j:forEach var="s" items="${descriptor.timeUnits}">

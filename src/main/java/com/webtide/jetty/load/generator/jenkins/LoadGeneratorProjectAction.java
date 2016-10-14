@@ -24,6 +24,7 @@ import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
+import hudson.util.RunList;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.StaplerRequest;
@@ -59,13 +60,14 @@ public class LoadGeneratorProjectAction
     {
         this.project = project;
         // well that's weird but can happen especially with pipeline...
-        if (project != null)
+        if ( project != null )
         {
             Run lastBuild = forceProjectLoad( project );
 
             if ( lastBuild != null )
             {
-                LoadGeneratorBuildAction loadGeneratorBuildAction = lastBuild.getAction( LoadGeneratorBuildAction.class );
+                LoadGeneratorBuildAction loadGeneratorBuildAction =
+                    lastBuild.getAction( LoadGeneratorBuildAction.class );
                 if ( loadGeneratorBuildAction != null )
                 {
                     this.health = loadGeneratorBuildAction.getBuildHealth();
@@ -77,11 +79,11 @@ public class LoadGeneratorProjectAction
     }
 
     /**
-     *
      * @param project
      * @return the last build or null
      */
-    private Run forceProjectLoad( Job<?, ?> project ) {
+    private Run forceProjectLoad( Job<?, ?> project )
+    {
         try
         {
             return project.getLastBuild();
@@ -109,7 +111,7 @@ public class LoadGeneratorProjectAction
 
         List<CollectorInformations> datas = new ArrayList<>();
 
-        for ( Run run : project.getBuilds() )
+        for ( Run run : getCompleteRunList() )
         {
             LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
             if ( buildAction != null )
@@ -128,6 +130,29 @@ public class LoadGeneratorProjectAction
 
         return stringWriter.toString();
 
+    }
+
+
+    protected RunList<?> getCompleteRunList()
+    {
+        try
+        {
+            return project.getBuilds();
+        }
+        catch ( NullPointerException e )
+        {
+            // olamy: really hackhish but Jenkins lazy loading generate that!!
+            try
+            {
+                project.onLoad( Hudson.getActiveInstance(), project.getName() );
+                return project.getBuilds();
+            }
+            catch ( Exception e1 )
+            {
+                // crappyyyyyyy :-)
+            }
+        }
+        return new RunList<>();
     }
 
     public void doTrend( StaplerRequest req, StaplerResponse rsp )

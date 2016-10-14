@@ -62,8 +62,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getRunIteration(), //
                                                                  loadGeneratorBuilderStep.getTransactionRate(), //
                                                                  loadGeneratorBuilderStep.getTransport(), //
-                                                                 loadGeneratorBuilderStep.isSecureProtocol(), //
-                                                                 loadGeneratorBuilderStep.isEmbeddedLoadGenerator() );
+                                                                 loadGeneratorBuilderStep.isSecureProtocol());
 
         builder.doRun( taskListener, filePath, run, launcher );
 
