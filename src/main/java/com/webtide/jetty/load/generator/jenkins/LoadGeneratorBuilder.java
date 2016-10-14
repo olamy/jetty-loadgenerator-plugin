@@ -27,7 +27,6 @@ import groovy.lang.GroovyShell;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
@@ -39,8 +38,6 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.remoting.Channel;
-import hudson.remoting.DelegatingCallable;
 import hudson.remoting.Which;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -48,7 +45,6 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
-import jenkins.security.SlaveToMasterCallable;
 import jenkins.tasks.SimpleBuildStep;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -60,11 +56,7 @@ import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Zip;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.load.generator.CollectorInformations;
-import org.eclipse.jetty.load.generator.Http2TransportBuilder;
-import org.eclipse.jetty.load.generator.HttpFCGITransportBuilder;
-import org.eclipse.jetty.load.generator.HttpTransportBuilder;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.ValueListener;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
@@ -75,8 +67,6 @@ import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
-import org.eclipse.jetty.load.generator.starter.LoadGeneratorStarter;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -352,15 +342,9 @@ public class LoadGeneratorBuilder
 
         }
 
-        Path resultFilePath = launcher.getChannel().call( new MasterToSlaveCallable<Path, IOException>()
-        {
-            @Override
-            public Path call()
-                throws IOException
-            {
-                return Files.createTempFile( "loadgenerator_result", ".csv" );
-            }
-        } );
+        Path resultFilePath = Paths.get( launcher //
+                                             .getChannel() //
+                                             .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
         ResponseTimeFileWriter responseTimeFileWriter = new ResponseTimeFileWriter( resultFilePath );
         listeners.add( responseTimeFileWriter );
@@ -458,7 +442,7 @@ public class LoadGeneratorBuilder
 
         // cleanup
 
-        getCurrentNode().getChannel().call( new DeleteTmpFile( resultFilePath.toString() ) );
+        getCurrentNode().getChannel().call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
         Files.deleteIfExists( localResultFile );
 
         LOGGER.debug( "end" );
@@ -530,30 +514,6 @@ public class LoadGeneratorBuilder
             Path tmpPath = Files.createTempFile( "profile", ".tmp" );
             objectMapper.writeValue( tmpPath.toFile(), resourceProfile );
             return tmpPath.toString();
-        }
-    }
-
-    private static class DeleteTmpFile
-        extends MasterToSlaveCallable<Void, IOException>
-    {
-        private String filePath;
-
-        public DeleteTmpFile( String filePath )
-        {
-            this.filePath = filePath;
-        }
-
-        @Override
-        public Void call()
-            throws IOException
-        {
-            Path path = Paths.get( filePath );
-            if ( Files.exists( path ) )
-            {
-                Files.delete( path );
-            }
-
-            return null;
         }
     }
 
@@ -638,7 +598,9 @@ public class LoadGeneratorBuilder
             zip.execute();
             jar = t;
         }
-        else if ( copiedJar.exists() && copiedJar.digest().equals( Util.getDigestOf( jar ) ) )
+        else if ( copiedJar.exists() //
+            && copiedJar.digest().equals( Util.getDigestOf( jar ) ) ) //
+            // && copiedJar.lastModified() == jar.lastModified() )
         {
             log.println( seedName + ".jar already up to date" );
             return copiedJar;

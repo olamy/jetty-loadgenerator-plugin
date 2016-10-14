@@ -19,6 +19,7 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.DelegatingOutputStream;
 import hudson.util.StreamCopyThread;
 import jenkins.security.MasterToSlaveCallable;
+import org.eclipse.jetty.load.generator.starter.JenkinsRemoteStarter;
 import org.eclipse.jetty.load.generator.starter.LoadGeneratorStarter;
 
 import java.io.BufferedInputStream;
@@ -32,6 +33,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
@@ -67,7 +71,7 @@ public class LoadGeneratorProcessFactory
         args.add( "-cp" );
 
         String cp = LoadGeneratorBuilder.classPathEntry( slaveRoot, //
-                                                         LoadGeneratorStarter.class, //
+                                                         JenkinsRemoteStarter.class, //
                                                          "jetty-load-generator-starter", //
                                                          listener ) //
             + ( launcher.isUnix() ? ":" : ";" ) //
@@ -80,7 +84,7 @@ public class LoadGeneratorProcessFactory
         final Acceptor acceptor = launcher.getChannel().call( new SocketHandler() );
 
         InetAddress host = InetAddress.getLocalHost();
-        String hostName = host.getHostName();
+        String hostName = null;// host.getHostName();
 
         final String socket =
             hostName != null ? hostName + ":" + acceptor.getPort() : String.valueOf( acceptor.getPort() );
@@ -297,5 +301,41 @@ public class LoadGeneratorProcessFactory
 
     public static final int SOCKET_TIMEOUT = Integer.getInteger( "loadgenerator.socketTimeOut", 30 * 1000 );
 
+
+    static class RemoteTmpFileCreate extends MasterToSlaveCallable<String, IOException>
+    {
+        @Override
+        public String call()
+            throws IOException
+        {
+            return Files.createTempFile( "loadgenerator_result", ".csv" ).toString();
+        }
+    }
+
+
+
+    static class DeleteTmpFile
+        extends MasterToSlaveCallable<Void, IOException>
+    {
+        private String filePath;
+
+        public DeleteTmpFile( String filePath )
+        {
+            this.filePath = filePath;
+        }
+
+        @Override
+        public Void call()
+            throws IOException
+        {
+            Path path = Paths.get( filePath );
+            if ( Files.exists( path ) )
+            {
+                Files.delete( path );
+            }
+
+            return null;
+        }
+    }
 
 }
