@@ -27,6 +27,7 @@
     <jetty-93-version>9.3.12.v20160915</jetty-93-version>
     <jetty.version>9.3.12-SNAPSHOT</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
     <loadgenerator.debugPort>-1</loadgenerator.debugPort>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
   <scm>
@@ -136,6 +137,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.beust</groupId>
+      <artifactId>jcommander</artifactId>
+      <version>1.48</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 
@@ -152,15 +160,20 @@
           </configuration>
         </plugin>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <redirectTestOutputToFile>false</redirectTestOutputToFile>
+            <systemPropertyVariables>
+              <loadgenerator.debugPort>${loadgenerator.debugPort}</loadgenerator.debugPort>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.jenkins-ci.tools</groupId>
           <artifactId>maven-hpi-plugin</artifactId>
           <version>1.120</version>
           <configuration>
-            <!--
-            <loggers>
-              <hudson>FINE</hudson>
-            </loggers>
-            -->
             <systemProperties>
               <loadgenerator.debugPort>${loadgenerator.debugPort}</loadgenerator.debugPort>
             </systemProperties>

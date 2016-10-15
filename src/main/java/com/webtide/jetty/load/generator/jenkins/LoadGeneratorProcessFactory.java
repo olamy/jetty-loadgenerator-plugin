@@ -4,6 +4,7 @@ import hudson.AbortException;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Proc;
+import hudson.Util;
 import hudson.model.Computer;
 import hudson.model.JDK;
 import hudson.model.TaskListener;
@@ -19,14 +20,17 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.DelegatingOutputStream;
 import hudson.util.StreamCopyThread;
 import jenkins.security.MasterToSlaveCallable;
+import org.apache.tools.ant.Project;
+import org.apache.tools.ant.taskdefs.Zip;
 import org.eclipse.jetty.load.generator.starter.JenkinsRemoteStarter;
-import org.eclipse.jetty.load.generator.starter.LoadGeneratorStarter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -70,12 +74,18 @@ public class LoadGeneratorProcessFactory
 
         args.add( "-cp" );
 
-        String cp = LoadGeneratorBuilder.classPathEntry( slaveRoot, //
-                                                         JenkinsRemoteStarter.class, //
-                                                         "jetty-load-generator-starter", //
-                                                         listener ) //
+        String cp = classPathEntry( slaveRoot, //
+                                    JenkinsRemoteStarter.class, //
+                                    "jetty-load-generator-starter", //
+                                    listener ) //
             + ( launcher.isUnix() ? ":" : ";" ) //
             + remotingJar;
+
+        for (LoadGeneratorProcessClasspathDecorator decorator : LoadGeneratorProcessClasspathDecorator.all())
+        {
+            cp = decorator.decorateClasspath( cp, listener, slaveRoot, launcher );
+        }
+
 
         args.add( cp );
 
@@ -301,6 +311,57 @@ public class LoadGeneratorProcessFactory
 
     public static final int SOCKET_TIMEOUT = Integer.getInteger( "loadgenerator.socketTimeOut", 30 * 1000 );
 
+
+    static String classPathEntry( FilePath root, Class<?> representative, String seedName, TaskListener listener )
+        throws IOException, InterruptedException
+    {
+        if ( root == null )
+        { // master
+            return Which.jarFile( representative ).getAbsolutePath();
+        }
+        else
+        {
+            return copyJar( listener.getLogger(), root, representative, seedName ).getRemote();
+        }
+    }
+
+    /**
+     * Copies a jar file from the master to slave.
+     */
+    static FilePath copyJar( PrintStream log, FilePath dst, Class<?> representative, String seedName )
+        throws IOException, InterruptedException
+    {
+        // in normal execution environment, the master should be loading 'representative' from this jar, so
+        // in that way we can find it.
+        File jar = Which.jarFile( representative );
+        FilePath copiedJar = dst.child( seedName + ".jar" );
+
+        if ( jar.isDirectory() )
+        {
+            // but during the development and unit test environment, we may be picking the class up from the classes dir
+            Zip zip = new Zip();
+            zip.setBasedir( jar );
+            File t = File.createTempFile( seedName, "jar" );
+            t.delete();
+            zip.setDestFile( t );
+            zip.setProject( new Project() );
+            zip.execute();
+            jar = t;
+        }
+        else if ( copiedJar.exists() //
+            && copiedJar.digest().equals( Util.getDigestOf( jar ) ) ) //
+        // && copiedJar.lastModified() == jar.lastModified() )
+        {
+            log.println( seedName + ".jar already up to date" );
+            return copiedJar;
+        }
+
+        // Theoretically could be a race condition on a multi-executor Windows slave; symptom would be an IOException during the build.
+        // Could perhaps be solved by synchronizing on dst.getChannel() or similar.
+        new FilePath( jar ).copyTo( copiedJar );
+        log.println( "Copied " + seedName + ".jar" );
+        return copiedJar;
+    }
 
     static class RemoteTmpFileCreate extends MasterToSlaveCallable<String, IOException>
     {

@@ -315,10 +315,7 @@ public class LoadGeneratorBuilder
     {
 
         List<ResponseTimeListener> listeners = new ArrayList<>();
-        if ( this.responseTimeListeners != null )
-        {
-            listeners.addAll( this.responseTimeListeners );
-        }
+
 
         // TODO remove that one which is for debug purpose
         if ( LOGGER.isDebugEnabled() )
@@ -366,6 +363,10 @@ public class LoadGeneratorBuilder
             new DetailledResponseTimeReportListener();
 
         listeners.clear();
+        if ( this.responseTimeListeners != null )
+        {
+            listeners.addAll( this.responseTimeListeners );
+        }
         listeners.add( responseNumberPerPath );
         listeners.add( responseTimePerPath );
         listeners.add( globalSummaryReportListener );
@@ -560,58 +561,6 @@ public class LoadGeneratorBuilder
 
 
 
-
-
-    static String classPathEntry( FilePath root, Class<?> representative, String seedName, TaskListener listener )
-        throws IOException, InterruptedException
-    {
-        if ( root == null )
-        { // master
-            return Which.jarFile( representative ).getAbsolutePath();
-        }
-        else
-        {
-            return copyJar( listener.getLogger(), root, representative, seedName ).getRemote();
-        }
-    }
-
-    /**
-     * Copies a jar file from the master to slave.
-     */
-    static FilePath copyJar( PrintStream log, FilePath dst, Class<?> representative, String seedName )
-        throws IOException, InterruptedException
-    {
-        // in normal execution environment, the master should be loading 'representative' from this jar, so
-        // in that way we can find it.
-        File jar = Which.jarFile( representative );
-        FilePath copiedJar = dst.child( seedName + ".jar" );
-
-        if ( jar.isDirectory() )
-        {
-            // but during the development and unit test environment, we may be picking the class up from the classes dir
-            Zip zip = new Zip();
-            zip.setBasedir( jar );
-            File t = File.createTempFile( seedName, "jar" );
-            t.delete();
-            zip.setDestFile( t );
-            zip.setProject( new Project() );
-            zip.execute();
-            jar = t;
-        }
-        else if ( copiedJar.exists() //
-            && copiedJar.digest().equals( Util.getDigestOf( jar ) ) ) //
-            // && copiedJar.lastModified() == jar.lastModified() )
-        {
-            log.println( seedName + ".jar already up to date" );
-            return copiedJar;
-        }
-
-        // Theoretically could be a race condition on a multi-executor Windows slave; symptom would be an IOException during the build.
-        // Could perhaps be solved by synchronizing on dst.getChannel() or similar.
-        new FilePath( jar ).copyTo( copiedJar );
-        log.println( "Copied " + seedName + ".jar" );
-        return copiedJar;
-    }
 
     protected Node getCurrentNode()
     {
