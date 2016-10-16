@@ -126,15 +126,10 @@ public class LoadGeneratorBuilderTest
                                       1, "", 20, TimeUnit.SECONDS, //
                                       iteration, 1, LoadGenerator.Transport.HTTP, false );
 
-        ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
-
-        loadGeneratorBuilder.addResponseTimeListener( responseNumberPerPath );
 
         project.getBuildersList().add( loadGeneratorBuilder );
 
         FreeStyleBuild build = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() ); //project.scheduleBuild2( 0 ).get();
-
-
 
         if (build.getResult() != Result.SUCCESS)
         {
@@ -148,9 +143,9 @@ public class LoadGeneratorBuilderTest
 
         LoadGeneratorBuildAction action = build.getAction( LoadGeneratorBuildAction.class );
 
-        //action.getAllResponseInfoTimePerPath().size()
 
-        Assert.assertEquals( 12, responseNumberPerPath.getResponseNumberPerPath().size() );
+
+        Assert.assertEquals( 12, action.getAllResponseInfoTimePerPath().size() );
 
         for ( Map.Entry<String, List<ResponseTimeInfo>> entry : action.getAllResponseInfoTimePerPath().entrySet() ) // responseNumberPerPath.getResponseNumberPerPath().entrySet() )
         {
