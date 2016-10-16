@@ -66,7 +66,9 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -149,14 +151,13 @@ public class LoadGeneratorBuilderTest
         //action.getAllResponseInfoTimePerPath().size()
 
         Assert.assertEquals( 12, responseNumberPerPath.getResponseNumberPerPath().size() );
-        /*
-        for ( Map.Entry<String, AtomicInteger> entry : action.getPerPath().entrySet() ) // responseNumberPerPath.getResponseNumberPerPath().entrySet() )
+
+        for ( Map.Entry<String, List<ResponseTimeInfo>> entry : action.getAllResponseInfoTimePerPath().entrySet() ) // responseNumberPerPath.getResponseNumberPerPath().entrySet() )
         {
-            Assert.assertEquals( "not " + iteration + " but " + entry.getValue().get() + " for path " + entry.getKey(),
+            Assert.assertEquals( "not " + iteration + " but " + entry.getValue().size() + " for path " + entry.getKey(),
                                  //
-                                 entry.getValue().get(), iteration );
+                                 entry.getValue().size(), iteration );
         }
-        */
 
     }
 
