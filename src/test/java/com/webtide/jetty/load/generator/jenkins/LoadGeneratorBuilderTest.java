@@ -130,7 +130,8 @@ public class LoadGeneratorBuilderTest
 
         project.getBuildersList().add( loadGeneratorBuilder );
 
-        FreeStyleBuild build = project.scheduleBuild2( 0 ).get();
+        FreeStyleBuild build = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() ); //project.scheduleBuild2( 0 ).get();
+
 
 
         if (build.getResult() != Result.SUCCESS)
