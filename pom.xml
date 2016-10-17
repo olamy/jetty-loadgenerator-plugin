@@ -24,8 +24,8 @@
     <jenkins.version>1.651.2</jenkins.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <jackson2-version>2.7.5</jackson2-version>
-    <jetty-93-version>9.3.12.v20160915</jetty-93-version>
-    <jetty.version>9.3.12-SNAPSHOT</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
+    <jetty-93-version>9.3.13.M0</jetty-93-version>
+    <jetty.version>${jetty-93-version}</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
     <loadgenerator.debugPort>-1</loadgenerator.debugPort>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
