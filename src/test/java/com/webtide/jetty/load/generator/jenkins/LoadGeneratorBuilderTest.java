@@ -27,8 +27,11 @@ import hudson.Launcher;
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
+import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -48,6 +51,8 @@ import org.eclipse.jetty.toolchain.perf.PlatformTimer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
+import org.jenkinsci.plugins.workflow.job.WorkflowJob;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,6 +69,7 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -129,21 +135,42 @@ public class LoadGeneratorBuilderTest
 
         project.getBuildersList().add( loadGeneratorBuilder );
 
-        FreeStyleBuild build = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() ); //project.scheduleBuild2( 0 ).get();
+        Run run = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() );
 
-        if (build.getResult() != Result.SUCCESS)
-        {
-            LOGGER.error( "build failed: {}", IOUtils.toString( build.getLogInputStream() ) );
-            Assert.assertEquals( Result.SUCCESS, build.getResult() );
-        } else {
-            LOGGER.error( "build {}: {}", build.getResult(), IOUtils.toString( build.getLogInputStream() ) );
-        }
+        doAssert( run, iteration );
 
-        System.out.println("build log: " +  IOUtils.toString( build.getLogInputStream() )  );
-
-        LoadGeneratorBuildAction action = build.getAction( LoadGeneratorBuildAction.class );
+    }
 
 
+    @Test
+    public void testWithWorkflow() throws Exception
+    {
+        WorkflowJob project = j.jenkins.createProject( WorkflowJob.class, "foo");
+
+        InputStream inputStream =
+            Thread.currentThread().getContextClassLoader().getResourceAsStream( "pipeline.groovy" );
+
+        int iteration = 2;
+
+        Map<String,String> values = new HashMap<>(  );
+        values.put( "port" , Integer.toString( connector.getLocalPort()));
+        values.put( "iteration", Integer.toString( iteration ) );
+
+        String script = StrSubstitutor.replace( IOUtils.toString( inputStream ), values );
+
+
+        project.setDefinition(new CpsFlowDefinition( script ));
+
+        Run run = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() );
+
+        doAssert( run, iteration );
+
+    }
+
+    protected void doAssert(Run run, int iteration ) throws Exception
+    {
+
+        LoadGeneratorBuildAction action = run.getAction( LoadGeneratorBuildAction.class );
 
         Assert.assertEquals( 12, action.getAllResponseInfoTimePerPath().size() );
 

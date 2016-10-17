@@ -31,6 +31,7 @@ import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Executor;
 import hudson.model.HealthReport;
 import hudson.model.JDK;
@@ -346,10 +347,10 @@ public class LoadGeneratorBuilder
         ResponseTimeFileWriter responseTimeFileWriter = new ResponseTimeFileWriter( resultFilePath );
         listeners.add( responseTimeFileWriter );
 
-        List<String> args = getArgsProcess( resourceProfile );
+        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer() );
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
-                                                     this.jdkName, getCurrentNode(), //
+                                                     this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      listeners, args );
 
         // handle reports
@@ -443,18 +444,20 @@ public class LoadGeneratorBuilder
 
         // cleanup
 
-        getCurrentNode().getChannel().call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
+        getCurrentNode(launcher.getComputer()) //
+            .getChannel() //
+            .call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
         Files.deleteIfExists( localResultFile );
 
         LOGGER.debug( "end" );
     }
 
 
-    protected List<String> getArgsProcess( ResourceProfile resourceProfile )
+    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer )
         throws Exception
     {
 
-        final String tmpFilePath = getCurrentNode().getChannel().call( new CopyResourceProfile( resourceProfile ) );
+        final String tmpFilePath = getCurrentNode(computer).getChannel().call( new CopyResourceProfile( resourceProfile ) );
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
@@ -562,9 +565,19 @@ public class LoadGeneratorBuilder
 
 
 
-    protected Node getCurrentNode()
+    protected Node getCurrentNode( Computer computer )
     {
-        return Executor.currentExecutor().getOwner().getNode();
+        Node node = null;
+        // well avoid NPE when running workflow testing
+        //return Executor.currentExecutor().getOwner().getNode();
+        if (Computer.currentComputer() != null)
+        {
+            node = Computer.currentComputer().getNode();
+        }
+        if (node == null) {
+            node = computer.getNode();
+        }
+        return node;
     }
 
 
@@ -649,7 +662,8 @@ public class LoadGeneratorBuilder
                     .append( values.getStatus() ).append( '|' ) //
                     .append( values.getSize() );
 
-                this.bufferedWriter.write( sb.toString() + System.lineSeparator() );
+                this.bufferedWriter.write( sb.toString() );
+                this.bufferedWriter.newLine();//. write( sb.toString() + System.lineSeparator() );
             }
             catch ( IOException e )
             {
