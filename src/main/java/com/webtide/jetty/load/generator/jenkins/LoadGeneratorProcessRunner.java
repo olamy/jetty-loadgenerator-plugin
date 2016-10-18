@@ -28,7 +28,7 @@ public class LoadGeneratorProcessRunner
 
         long start = System.nanoTime();
 
-        JDK jdk = Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
+        JDK jdk = jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
         Channel channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher );
 
         channel.call( new LoadCaller( args, responseTimeListeners ) );
