@@ -29,6 +29,12 @@
 		<st:attribute name="resize">
 			Morris resize
 		</st:attribute>
+		<st:attribute name="parseTime">
+			Morris parseTime
+		</st:attribute>
+		<st:attribute name="xLabelFormat">
+			Morris xLabelFormat function
+		</st:attribute>
 
 
 	</st:documentation>
@@ -41,6 +47,7 @@
 								data: ${attrs.data},
 							  xkey: '${attrs.xkey}',
 								ykeys: ${attrs.ykeys},
+								parseTime: ${attrs.parseTime},
 								labels: ${attrs.labels},
 								hideHover: '${attrs.hideOver}',
 								resize: ${attrs.resize},
@@ -48,7 +55,8 @@
 															return moment(new Date(x)).format('DD/MM/YYYY H:mm:ss');
 														},
 								xLabelFormat: function(x) {
-															return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+															//return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+															${attrs.xLabelFormat}
 														}
 
 				});

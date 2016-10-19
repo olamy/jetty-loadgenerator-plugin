@@ -52,7 +52,7 @@ public class LoadGeneratorBuilderStep
 
     private int users;
 
-    private String profileXmlFromFile;
+    private String profileFromFile;
 
     private int runningTime;
 
@@ -70,7 +70,7 @@ public class LoadGeneratorBuilderStep
 
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
-                                     String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit,
+                                     String profileFromFile, int runningTime, TimeUnit runningTimeUnit,
                                      int runIteration, int transactionRate, LoadGenerator.Transport transport,
                                      boolean secureProtocol )
     {
@@ -78,7 +78,7 @@ public class LoadGeneratorBuilderStep
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileXmlFromFile = profileXmlFromFile;
+        this.profileFromFile = profileFromFile;
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit;
         this.runIteration = runIteration;
@@ -107,9 +107,9 @@ public class LoadGeneratorBuilderStep
         return users;
     }
 
-    public String getProfileXmlFromFile()
+    public String getProfileFromFile()
     {
-        return profileXmlFromFile;
+        return profileFromFile;
     }
 
     public int getRunningTime()

@@ -8,7 +8,8 @@
       <h2>Global Reponse Time</h2>
       <p>
         <m:morris id="meanResponseTime" height="300px" width="50%" data="${it.globalData}"
-                 xkey="endTimeStamp"
+                 xkey="buildId" parseTime="false"
+                  xLabelFormat="return 'Build #' + x.src.buildId;"
                   ykeys="['mean','minValue','maxValue','value90', 'value50']"
                   labels="['Mean','Min','Max','90 Percentile','50 Percentile']"
                   hideOver="auto" resize="true"/>

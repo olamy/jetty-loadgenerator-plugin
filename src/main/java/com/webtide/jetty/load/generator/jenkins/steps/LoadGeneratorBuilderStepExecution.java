@@ -56,7 +56,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getHost(), //
                                                                  loadGeneratorBuilderStep.getPort(), //
                                                                  loadGeneratorBuilderStep.getUsers(), //
-                                                                 loadGeneratorBuilderStep.getProfileXmlFromFile(), //
+                                                                 loadGeneratorBuilderStep.getProfileFromFile(), //
                                                                  loadGeneratorBuilderStep.getRunningTime(), //
                                                                  loadGeneratorBuilderStep.getRunningTimeUnit(), //
                                                                  loadGeneratorBuilderStep.getRunIteration(), //

@@ -32,14 +32,12 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Computer;
-import hudson.model.Executor;
 import hudson.model.HealthReport;
 import hudson.model.JDK;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.remoting.Which;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
@@ -53,8 +51,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tools.ant.Project;
-import org.apache.tools.ant.taskdefs.Zip;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.load.generator.CollectorInformations;
@@ -79,9 +75,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -120,7 +114,7 @@ public class LoadGeneratorBuilder
 
     private final int users;
 
-    private final String profileXmlFromFile;
+    private final String profileFromFile;
 
     private final int runningTime;
 
@@ -142,7 +136,7 @@ public class LoadGeneratorBuilder
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileXmlFromFile,
+    public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileFromFile,
                                  int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
                                  LoadGenerator.Transport transport, boolean secureProtocol )
     {
@@ -150,7 +144,7 @@ public class LoadGeneratorBuilder
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileXmlFromFile = profileXmlFromFile;
+        this.profileFromFile = profileFromFile;
         this.runningTime = runningTime < 1 ? 30 : runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
@@ -168,7 +162,7 @@ public class LoadGeneratorBuilder
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileXmlFromFile = profileXmlFromFile;
+        this.profileFromFile = profileXmlFromFile;
         this.runningTime = runningTime < 1 ? 30 : runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
@@ -197,9 +191,9 @@ public class LoadGeneratorBuilder
         return users;
     }
 
-    public String getProfileXmlFromFile()
+    public String getProfileFromFile()
     {
-        return profileXmlFromFile;
+        return profileFromFile;
     }
 
     public int getRunningTime()
@@ -401,7 +395,7 @@ public class LoadGeneratorBuilder
 
         // manage results
 
-        SummaryReport summaryReport = new SummaryReport();
+        SummaryReport summaryReport = new SummaryReport(run.getId());
 
         Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getRecorderPerPath().size() );
 
@@ -418,7 +412,7 @@ public class LoadGeneratorBuilder
             summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
         }
 
-        // TODO calculate score from previous build
+        // FIXME calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
 
         Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
@@ -530,6 +524,14 @@ public class LoadGeneratorBuilder
 
         String groovy = StringUtils.trim( this.getProfileGroovy() );
 
+        String profileFromPath = getProfileFromFile();
+
+        if (StringUtils.isBlank( groovy ) && StringUtils.isNotBlank( profileFromPath ))
+        {
+            FilePath profileGroovyFilePath = workspace.child( profileFromPath );
+            groovy = IOUtils.toString( profileGroovyFilePath.read() );
+        }
+
         if ( StringUtils.isNotBlank( groovy ) )
         {
             CompilerConfiguration compilerConfiguration = new CompilerConfiguration( CompilerConfiguration.DEFAULT );
@@ -544,19 +546,6 @@ public class LoadGeneratorBuilder
                                                        compilerConfiguration );
 
             resourceProfile = (ResourceProfile) interpreter.evaluate( groovy );
-        }
-        else
-        {
-
-            String profileXmlPath = getProfileXmlFromFile();
-
-            if ( StringUtils.isNotBlank( profileXmlPath ) )
-            {
-                FilePath profileXmlFilePath = workspace.child( profileXmlPath );
-                String xml = IOUtils.toString( profileXmlFilePath.read() );
-                LOGGER.debug( "profileXml: {}", xml );
-                resourceProfile = (ResourceProfile) new XmlConfiguration( xml ).configure();
-            }
         }
 
         return resourceProfile;

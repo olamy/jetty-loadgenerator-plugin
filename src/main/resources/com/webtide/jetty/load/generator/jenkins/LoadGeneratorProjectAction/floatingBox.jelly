@@ -13,17 +13,19 @@
             var grah = Morris.Line({
               element: 'load_generator_trend',
               data: json,
-              xkey: 'endTimeStamp',
+              xkey: 'buildId',
               ykeys: ['mean','maxValue','value90'],
               labels: ['Mean', 'Max', '90 Percentile'],
               resize: true,
               pointSize: 1,
+              parseTime: false,
               hideHover: 'auto',
               dateFormat: function(x) {
-                            return moment(new Date(x)).format('DD/MM/YYYY H:mm:ss');
+                          console.log('dateFormat'+x);
+                            return x;
                           },
               xLabelFormat: function(x) {
-                            return moment(new Date(x)).format('DD/MM/YYYY H:mm');
+                            return 'Build #' + x.src.buildId;
                           }
             });
           });

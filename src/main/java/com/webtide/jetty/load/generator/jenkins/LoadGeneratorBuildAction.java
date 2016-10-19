@@ -61,6 +61,8 @@ public class LoadGeneratorBuildAction
 
     private Job job;
 
+    private String buildId;
+
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
                                      CollectorInformations globalCollectorInformations,
                                      Map<String, CollectorInformations> perPath,
@@ -72,7 +74,7 @@ public class LoadGeneratorBuildAction
         this.perPath = perPath;
         this.job = run.getParent();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
-
+        this.buildId = run.getId();
     }
 
     public SummaryReport getSummaryReport()

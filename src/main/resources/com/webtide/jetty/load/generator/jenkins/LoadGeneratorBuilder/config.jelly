@@ -16,7 +16,7 @@
   <f:entry title="${%Profile Groovy}" field="profileGroovy">
     <f:expandableTextbox />
   </f:entry>
-  <f:entry title="${%Profile Xml From Path}" field="profileXmlFromFile">
+  <f:entry title="${%Profile From Path}" field="profileFromFile">
     <f:textbox/>
   </f:entry>
   <f:entry title="${%Running Time}" field="runningTime">

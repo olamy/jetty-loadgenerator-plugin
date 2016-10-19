@@ -36,6 +36,8 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -109,20 +111,33 @@ public class LoadGeneratorProjectAction
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        List<CollectorInformations> datas = new ArrayList<>();
+        List<RunInformations> datas = new ArrayList<>();
 
         for ( Run run : getCompleteRunList() )
         {
             LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
             if ( buildAction != null )
             {
-                CollectorInformations collectorInformations = buildAction.getGlobalCollectorInformations();
-                if ( collectorInformations != null )
+                if ( buildAction.getGlobalCollectorInformations() != null )
                 {
-                    datas.add( collectorInformations );
+                    RunInformations runInformations =
+                        new RunInformations( run.getId(), buildAction.getGlobalCollectorInformations() );
+                    datas.add( runInformations );
                 }
             }
         }
+
+        // order by buildId
+
+        Collections.sort( datas, new Comparator<RunInformations>()
+        {
+            @Override
+            public int compare( RunInformations o1, RunInformations o2 )
+            {
+                // not sure we will reach max of int :-)
+                return Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) );
+            }
+        } );
 
         StringWriter stringWriter = new StringWriter();
 
@@ -132,6 +147,37 @@ public class LoadGeneratorProjectAction
 
     }
 
+
+    public static class RunInformations
+        extends CollectorInformations
+    {
+        private String buildId;
+
+        public RunInformations( String buildId, CollectorInformations collectorInformations )
+        {
+            this.buildId = buildId;
+            setInformationType( collectorInformations.getInformationType() );
+            totalCount( collectorInformations.getTotalCount() );
+            minValue( collectorInformations.getMinValue() );
+            maxValue( collectorInformations.getMaxValue() );
+            value50( collectorInformations.getValue50() );
+            value90( collectorInformations.getValue90() );
+            mean( collectorInformations.getMean() );
+            stdDeviation( collectorInformations.getStdDeviation() );
+            startTimeStamp( collectorInformations.getStartTimeStamp() );
+            endTimeStamp( collectorInformations.getEndTimeStamp() );
+        }
+
+        public String getBuildId()
+        {
+            return buildId;
+        }
+
+        public void setBuildId( String buildId )
+        {
+            this.buildId = buildId;
+        }
+    }
 
     protected RunList<?> getCompleteRunList()
     {
