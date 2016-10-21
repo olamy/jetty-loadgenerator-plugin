@@ -22,3 +22,10 @@
 .floating-box::after{
     content: 'Load Generator Trend';
 }
+
+.floating-box-cometd-latency::after{
+    content: 'Latency Trend';
+}
+.floating-box-cometd-cpu::after{
+    content: 'Cpu Trend';
+}

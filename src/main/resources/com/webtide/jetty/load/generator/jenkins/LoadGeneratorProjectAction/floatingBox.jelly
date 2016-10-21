@@ -21,7 +21,6 @@
               parseTime: false,
               hideHover: 'auto',
               dateFormat: function(x) {
-                          console.log('dateFormat'+x);
                             return x;
                           },
               xLabelFormat: function(x) {

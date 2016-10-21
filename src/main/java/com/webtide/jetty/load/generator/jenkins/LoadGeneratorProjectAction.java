@@ -63,7 +63,7 @@ public class LoadGeneratorProjectAction
 
         List<RunInformations> datas = new ArrayList<>();
 
-        for ( Run run : getCompleteRunList() )
+        for ( Run run : JenkinsUtils.getCompleteRunList(project) )
         {
             LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
             if ( buildAction != null )
@@ -121,27 +121,6 @@ public class LoadGeneratorProjectAction
         }
     }
 
-    protected RunList<?> getCompleteRunList()
-    {
-        try
-        {
-            return project.getBuilds();
-        }
-        catch ( NullPointerException e )
-        {
-            // olamy: really hackhish but Jenkins lazy loading generate that!!
-            try
-            {
-                project.onLoad( Hudson.getActiveInstance(), project.getName() );
-                return project.getBuilds();
-            }
-            catch ( Exception e1 )
-            {
-                // crappyyyyyyy :-)
-            }
-        }
-        return new RunList<>();
-    }
 
     public void doTrend( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException

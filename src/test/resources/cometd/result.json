@@ -1,0 +1,116 @@
+{
+  "config" : {
+    "cores" : 8,
+    "totalMemory" : {
+      "value" : 31.376282,
+      "unit" : "GiB"
+    },
+    "os" : "Linux 4.4.0-43-generic amd64",
+    "jvm" : "Oracle Corporation Java HotSpot(TM) 64-Bit Server VM 25.102-b14 1.8.0_102-b14",
+    "totalHeap" : {
+      "value" : 6.974121,
+      "unit" : "GiB"
+    },
+    "date" : "Mon Oct 17 12:00:00 CEST 2016",
+    "transport" : "long-polling",
+    "clients" : 1000,
+    "rooms" : 100,
+    "roomsPerClient" : 10,
+    "batches" : 1000,
+    "batchSize" : 10,
+    "batchPause" : {
+      "value" : 10000,
+      "unit" : "µs"
+    },
+    "messageSize" : {
+      "value" : 50,
+      "unit" : "bytes"
+    }
+  },
+  "results" : {
+    "cpu" : {
+      "value" : 34.145973,
+      "unit" : "%"
+    },
+    "jitTime" : {
+      "value" : 11,
+      "unit" : "ms"
+    },
+    "messages" : 998793,
+    "sendTime" : {
+      "value" : 10691,
+      "unit" : "ms"
+    },
+    "sendRate" : {
+      "value" : 935,
+      "unit" : "messages/s"
+    },
+    "receiveTime" : {
+      "value" : 10729,
+      "unit" : "ms"
+    },
+    "receiveRate" : {
+      "value" : 93091,
+      "unit" : "messages/s"
+    },
+    "latency" : {
+      "min" : {
+        "value" : 219,
+        "unit" : "µs"
+      },
+      "p50" : {
+        "value" : 17186,
+        "unit" : "µs"
+      },
+      "p99" : {
+        "value" : 44892,
+        "unit" : "µs"
+      },
+      "max" : {
+        "value" : 135528,
+        "unit" : "µs"
+      }
+    },
+    "threadPool" : {
+      "tasks" : 456080,
+      "queueSizeMax" : 875,
+      "activeThreadsMax" : 252,
+      "queueLatencyAverage" : {
+        "value" : 2,
+        "unit" : "ms"
+      },
+      "queueLatencyMax" : {
+        "value" : 18,
+        "unit" : "ms"
+      },
+      "taskTimeAverage" : {
+        "value" : 0,
+        "unit" : "ms"
+      },
+      "taskTimeMax" : {
+        "value" : 56,
+        "unit" : "ms"
+      }
+    },
+    "gc" : {
+      "youngCount" : 7,
+      "youngTime" : {
+        "value" : 35,
+        "unit" : "ms"
+      },
+      "oldCount" : 0,
+      "oldTime" : {
+        "value" : 0,
+        "unit" : "ms"
+      },
+      "youngGarbage" : {
+        "value" : 7472.4604,
+        "unit" : "MiB"
+      },
+      "oldGarbage" : {
+        "value" : 5.890167,
+        "unit" : "MiB"
+      }
+    }
+  }
+}
