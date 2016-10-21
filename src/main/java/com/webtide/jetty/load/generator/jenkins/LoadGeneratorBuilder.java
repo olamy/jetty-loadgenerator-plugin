@@ -98,12 +98,6 @@ public class LoadGeneratorBuilder
     implements SimpleBuildStep
 {
 
-    public static final String REPORT_DIRECTORY_NAME = "load-generator-reports";
-
-    public static final String SUMMARY_REPORT_FILE = "summaryReport.json";
-
-    public static final String GLOBAL_SUMMARY_REPORT_FILE = "globalSummaryReport.json";
-
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuilder.class );
 
     private final String profileGroovy;

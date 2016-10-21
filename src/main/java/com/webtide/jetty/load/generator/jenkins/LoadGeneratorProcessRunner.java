@@ -25,19 +25,30 @@ public class LoadGeneratorProcessRunner
                             Node currentNode, List<?> responseTimeListeners, List<String> args )
         throws Exception
     {
+        Channel channel = null;
 
-        long start = System.nanoTime();
+        try
+        {
+            long start = System.nanoTime();
 
-        JDK jdk = jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
-        Channel channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher );
+            JDK jdk = jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
+            channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher );
 
-        channel.call( new LoadCaller( args, responseTimeListeners ) );
+            channel.call( new LoadCaller( args, responseTimeListeners ) );
 
-        long end = System.nanoTime();
+            long end = System.nanoTime();
 
-        taskListener.getLogger().println( "remote LoadGenerator execution done: " //
-                                              + TimeUnit.NANOSECONDS.toMillis( end - start ) //
-                                              + " ms ");
+            taskListener.getLogger().println( "remote LoadGenerator execution done: " //
+                                                  + TimeUnit.NANOSECONDS.toMillis( end - start ) //
+                                                  + " ms ");
+        }
+        finally
+        {
+            if (channel != null)
+            {
+                channel.close();
+            }
+        }
 
     }
 

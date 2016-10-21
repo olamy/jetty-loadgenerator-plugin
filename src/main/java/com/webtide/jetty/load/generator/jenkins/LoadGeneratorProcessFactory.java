@@ -104,7 +104,6 @@ public class LoadGeneratorProcessFactory
 
         final Proc proc = launcher.launch().cmds( args ).stdout( listener ).stderr( listener.getLogger() ).start();
 
-
         Connection con;
         try
         {
@@ -131,6 +130,7 @@ public class LoadGeneratorProcessFactory
                                       new BufferedOutputStream( con.out ), //
                                       listener.getLogger(), //
                                       proc );
+
 
             return ch;
         }
