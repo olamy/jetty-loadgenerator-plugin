@@ -128,9 +128,17 @@ public class LoadGeneratorBuilderTest
         int iteration = 2;
 
         LoadGeneratorBuilder loadGeneratorBuilder =
-            new LoadGeneratorBuilder( IOUtils.toString( inputStream ), "localhost", connector.getLocalPort(), //
-                                      1, "", 20, TimeUnit.SECONDS, //
-                                      iteration, 1, LoadGenerator.Transport.HTTP, false );
+            new LoadGeneratorBuilder( IOUtils.toString( inputStream ), //
+                                      "localhost", //
+                                      Integer.toString( connector.getLocalPort()), //
+                                      1, //
+                                      "",  //
+                                      Integer.toString( 20 ), //
+                                      TimeUnit.SECONDS, //
+                                      Integer.toString(iteration), //
+                                      1, //
+                                      LoadGenerator.Transport.HTTP, //
+                                      false );
 
 
         project.getBuildersList().add( loadGeneratorBuilder );

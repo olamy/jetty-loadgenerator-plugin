@@ -41,7 +41,7 @@ import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.FormValidation;
+import hudson.util.ReflectionUtils;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import jenkins.tasks.SimpleBuildStep;
@@ -51,6 +51,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.load.generator.CollectorInformations;
@@ -64,19 +66,17 @@ import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
-import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import javax.servlet.ServletException;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -104,17 +104,17 @@ public class LoadGeneratorBuilder
 
     private final String host;
 
-    private final int port;
+    private final String port;
 
     private final int users;
 
     private final String profileFromFile;
 
-    private final int runningTime;
+    private final String runningTime;
 
     private final TimeUnit runningTimeUnit;
 
-    private final int runIteration;
+    private final String runIteration;
 
     private final int transactionRate;
 
@@ -130,8 +130,8 @@ public class LoadGeneratorBuilder
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public LoadGeneratorBuilder( String profileGroovy, String host, int port, int users, String profileFromFile,
-                                 int runningTime, TimeUnit runningTimeUnit, int runIteration, int transactionRate,
+    public LoadGeneratorBuilder( String profileGroovy, String host, String port, int users, String profileFromFile,
+                                 String runningTime, TimeUnit runningTimeUnit, String runIteration, int transactionRate,
                                  LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
@@ -139,7 +139,7 @@ public class LoadGeneratorBuilder
         this.port = port;
         this.users = users;
         this.profileFromFile = profileFromFile;
-        this.runningTime = runningTime < 1 ? 30 : runningTime;
+        this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
@@ -147,8 +147,8 @@ public class LoadGeneratorBuilder
         this.secureProtocol = secureProtocol;
     }
 
-    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, int port, int users,
-                                 String profileXmlFromFile, int runningTime, TimeUnit runningTimeUnit, int runIteration,
+    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, String port, int users,
+                                 String profileXmlFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
                                  int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = null;
@@ -157,7 +157,7 @@ public class LoadGeneratorBuilder
         this.port = port;
         this.users = users;
         this.profileFromFile = profileXmlFromFile;
-        this.runningTime = runningTime < 1 ? 30 : runningTime;
+        this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
@@ -175,7 +175,7 @@ public class LoadGeneratorBuilder
         return host;
     }
 
-    public int getPort()
+    public String getPort()
     {
         return port;
     }
@@ -190,7 +190,7 @@ public class LoadGeneratorBuilder
         return profileFromFile;
     }
 
-    public int getRunningTime()
+    public String getRunningTime()
     {
         return runningTime;
     }
@@ -200,7 +200,7 @@ public class LoadGeneratorBuilder
         return runningTimeUnit;
     }
 
-    public int getRunIteration()
+    public String getRunIteration()
     {
         return runIteration;
     }
@@ -298,6 +298,45 @@ public class LoadGeneratorBuilder
 
     }
 
+    /**
+     * Expand tokens with token macro and build variables
+     */
+    protected static String expandTokens( TaskListener listener, String str, Run<?,?> run )
+        throws Exception
+    {
+        if ( str == null )
+        {
+            return null;
+        }
+        try
+        {
+            Class<?> clazz = Class.forName( "org.jenkinsci.plugins.tokenmacro.TokenMacro" );
+            Method expandMethod = ReflectionUtils.findMethod( clazz, "expand",
+                                                              new Class[]{
+                                                                  AbstractBuild.class, //
+                                                                  TaskListener.class, //
+                                                                  String.class } );
+            return (String) expandMethod.invoke( null, run, listener, str );
+            //opts = TokenMacro.expand(this, listener, opts);
+        }
+        catch ( Exception tokenException )
+        {
+            //Token plugin not present. Ignore, this is OK.
+            LOGGER.trace( "Ignore problem in expanding tokens", tokenException );
+        }
+        catch ( LinkageError linkageError )
+        {
+            // Token plugin not present. Ignore, this is OK.
+            LOGGER.trace( "Ignore problem in expanding tokens", linkageError );
+        }
+
+
+        str = StrSubstitutor.replace( str, run.getEnvironment(listener) );
+
+        return str;
+    }
+
+
     protected void runProcess( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher,
                                ResourceProfile resourceProfile )
         throws Exception
@@ -335,7 +374,7 @@ public class LoadGeneratorBuilder
         ResponseTimeFileWriter responseTimeFileWriter = new ResponseTimeFileWriter( resultFilePath );
         listeners.add( responseTimeFileWriter );
 
-        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer() );
+        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, run );
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
@@ -441,7 +480,7 @@ public class LoadGeneratorBuilder
     }
 
 
-    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer )
+    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer, TaskListener taskListener, Run<?,?> run)
         throws Exception
     {
 
@@ -450,16 +489,16 @@ public class LoadGeneratorBuilder
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
         cmdLine.add( "-pjp" ).add( tmpFilePath );
-        cmdLine.add( "-h" ).add( host );
-        cmdLine.add( "-p" ).add( port );
+        cmdLine.add( "-h" ).add( expandTokens( taskListener, host, run ) );
+        cmdLine.add( "-p" ).add( expandTokens( taskListener, port, run ) );
 
-        if ( runIteration > 0 )
+        if ( NumberUtils.isNumber( runIteration ) && Integer.parseInt( runIteration ) > 0 )
         {
-            cmdLine.add( "-ri" ).add( runIteration );
+            cmdLine.add( "-ri" ).add( expandTokens( taskListener, runIteration, run) );
         }
         else
         {
-            cmdLine.add( "-rt" ).add( runningTime );
+            cmdLine.add( "-rt" ).add( expandTokens( taskListener, runningTime, run ) );
             cmdLine.add( "-rtu" );
             switch ( this.runningTimeUnit )
             {
@@ -724,82 +763,6 @@ public class LoadGeneratorBuilder
         public List<LoadGenerator.Transport> getTransports()
         {
             return TRANSPORTS;
-        }
-
-        public FormValidation doCheckPort( @QueryParameter String value )
-            throws IOException, ServletException
-        {
-            try
-            {
-                int port = Integer.parseInt( value );
-                if ( port < 1 )
-                {
-                    return FormValidation.error( "port must be a positive number" );
-                }
-            }
-            catch ( NumberFormatException e )
-            {
-                return FormValidation.error( "port must be number" );
-            }
-
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckUsers( @QueryParameter String value )
-            throws IOException, ServletException
-        {
-            try
-            {
-                int port = Integer.parseInt( value );
-                if ( port < 1 )
-                {
-                    return FormValidation.error( "users must be a positive number" );
-                }
-            }
-            catch ( NumberFormatException e )
-            {
-                return FormValidation.error( "users must be number" );
-            }
-
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckRunningTime( @QueryParameter String value )
-            throws IOException, ServletException
-        {
-            try
-            {
-                int runningTime = Integer.parseInt( value );
-                if ( runningTime < 1 )
-                {
-                    return FormValidation.error( "running time must be a positive number" );
-                }
-            }
-            catch ( NumberFormatException e )
-            {
-                return FormValidation.error( "running time must be number" );
-            }
-
-            return FormValidation.ok();
-        }
-
-        public FormValidation doCheckTransactionRate( @QueryParameter String value )
-            throws IOException, ServletException
-        {
-            try
-            {
-                int transactionRate = Integer.parseInt( value );
-                if ( transactionRate <= 0 )
-                {
-                    return FormValidation.error( "transactionRate must be a positive number" );
-                }
-            }
-            catch ( NumberFormatException e )
-            {
-                return FormValidation.error( "transactionRate time must be number" );
-            }
-
-            return FormValidation.ok();
         }
 
         public boolean isApplicable( Class<? extends AbstractProject> aClass )

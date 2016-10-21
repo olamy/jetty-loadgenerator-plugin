@@ -48,17 +48,17 @@ public class LoadGeneratorBuilderStep
 
     private String host;
 
-    private int port;
+    private String port;
 
     private int users;
 
     private String profileFromFile;
 
-    private int runningTime;
+    private String runningTime;
 
     private TimeUnit runningTimeUnit;
 
-    private int runIteration;
+    private String runIteration;
 
     private int transactionRate;
 
@@ -69,9 +69,9 @@ public class LoadGeneratorBuilderStep
     private String jdkName;
 
     @DataBoundConstructor
-    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
-                                     String profileFromFile, int runningTime, TimeUnit runningTimeUnit,
-                                     int runIteration, int transactionRate, LoadGenerator.Transport transport,
+    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, String port, int users,
+                                     String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
+                                     String runIteration, int transactionRate, LoadGenerator.Transport transport,
                                      boolean secureProtocol )
     {
         this.resourceProfile = resourceProfile;
@@ -97,7 +97,7 @@ public class LoadGeneratorBuilderStep
         return host;
     }
 
-    public int getPort()
+    public String getPort()
     {
         return port;
     }
@@ -112,7 +112,7 @@ public class LoadGeneratorBuilderStep
         return profileFromFile;
     }
 
-    public int getRunningTime()
+    public String getRunningTime()
     {
         return runningTime;
     }
@@ -122,7 +122,7 @@ public class LoadGeneratorBuilderStep
         return runningTimeUnit;
     }
 
-    public int getRunIteration()
+    public String getRunIteration()
     {
         return runIteration;
     }

@@ -102,6 +102,14 @@
       <artifactId>HdrHistogram</artifactId>
       <version>2.1.9</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>token-macro</artifactId>
+      <version>1.1</version>
+      <optional>true</optional>
+    </dependency>
+
     <!-- dependencies on Jenkins Pipeline plugins -->
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>

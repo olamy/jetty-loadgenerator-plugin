@@ -22,6 +22,6 @@ node ('master') {
 
   def timeUnit = java.util.concurrent.TimeUnit.SECONDS;
 
-  loadgenerator host: 'localhost', port: ${port}, resourceProfile: profile, users: 1, transactionRate: 1, transport: transport, runIteration: ${iteration}, runningTime: 20, runningTimeUnit: timeUnit
+  loadgenerator host: 'localhost', port: '${port}', resourceProfile: profile, users: 1, transactionRate: 1, transport: transport, runIteration: '${iteration}', runningTime: '20', runningTimeUnit: timeUnit
 
 }
