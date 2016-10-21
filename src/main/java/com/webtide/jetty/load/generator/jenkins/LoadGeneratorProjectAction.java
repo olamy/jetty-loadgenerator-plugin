@@ -19,14 +19,12 @@ package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.Actionable;
-import hudson.model.HealthReport;
 import hudson.model.Hudson;
 import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
 import org.eclipse.jetty.load.generator.CollectorInformations;
-import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
@@ -37,7 +35,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -50,60 +47,13 @@ public class LoadGeneratorProjectAction
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorProjectAction.class );
 
-    private HealthReport health = null;
-
-    private SummaryReport summaryReport;
-
-    private CollectorInformations globalCollectorInformations;
-
     private final Job<?, ?> project;
 
     public LoadGeneratorProjectAction( Job<?, ?> project )
     {
         this.project = project;
-        // well that's weird but can happen especially with pipeline...
-        if ( project != null )
-        {
-            Run lastBuild = forceProjectLoad( project );
-
-            if ( lastBuild != null )
-            {
-                LoadGeneratorBuildAction loadGeneratorBuildAction =
-                    lastBuild.getAction( LoadGeneratorBuildAction.class );
-                if ( loadGeneratorBuildAction != null )
-                {
-                    this.health = loadGeneratorBuildAction.getBuildHealth();
-                    this.summaryReport = loadGeneratorBuildAction.getSummaryReport();
-                    this.globalCollectorInformations = loadGeneratorBuildAction.getGlobalCollectorInformations();
-                }
-            }
-        }
     }
 
-    /**
-     * @param project
-     * @return the last build or null
-     */
-    private Run forceProjectLoad( Job<?, ?> project )
-    {
-        try
-        {
-            return project.getLastBuild();
-        }
-        catch ( Exception e )
-        {
-            try
-            {
-                project.onLoad( Hudson.getActiveInstance(), project.getName() );
-                return project.getLastBuild();
-            }
-            catch ( Exception e1 )
-            {
-                // we cannot load it so ignore yup I know that's really hackhish here :-)
-                return null;
-            }
-        }
-    }
 
     public String getGlobalData()
         throws IOException
@@ -129,15 +79,7 @@ public class LoadGeneratorProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, new Comparator<RunInformations>()
-        {
-            @Override
-            public int compare( RunInformations o1, RunInformations o2 )
-            {
-                // not sure we will reach max of int :-)
-                return Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) );
-            }
-        } );
+        Collections.sort( datas, ( o1, o2 ) -> Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) ) );
 
         StringWriter stringWriter = new StringWriter();
 
