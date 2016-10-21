@@ -29,3 +29,6 @@
 .floating-box-cometd-cpu::after{
     content: 'Cpu Trend';
 }
+.floating-box-cometd-garbage::after{
+    content: 'Garbage Trend';
+}
