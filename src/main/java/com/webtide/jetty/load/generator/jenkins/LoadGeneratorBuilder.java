@@ -402,6 +402,8 @@ public class LoadGeneratorBuilder
 
         // get remote file
 
+        LOGGER.info( "LoadGenerator parsing result file" );
+
         Path localResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
 
         workspace.child( resultFilePath.toString() ).copyTo( Files.newOutputStream( localResultFile ) );
@@ -476,7 +478,7 @@ public class LoadGeneratorBuilder
             .call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
         Files.deleteIfExists( localResultFile );
 
-        LOGGER.debug( "end" );
+        LOGGER.info( "LoadGenerator end" );
     }
 
 
