@@ -17,6 +17,7 @@
 }
 .graph-container .caption {
     text-align: center;
+    width: 100%;
 }
 
 .floating-box::after{
@@ -24,11 +25,11 @@
 }
 
 .floating-box-cometd-latency::after{
-    content: 'Latency Trend';
+    content: 'Latency Trend ms';
 }
 .floating-box-cometd-cpu::after{
     content: 'Cpu Trend';
 }
-.floating-box-cometd-garbage::after{
+.floating-box-cometd-garbageop::after{
     content: 'Garbage Trend';
 }

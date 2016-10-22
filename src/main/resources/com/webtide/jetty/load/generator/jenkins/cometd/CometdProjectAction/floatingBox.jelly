@@ -5,8 +5,8 @@
          xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
   <m:import/>
   <div class="graph-container floating-box-cometd-latency" align="right" >
-      <div id="load_generator_cometd_latency" class="graph" style="width: 85%;height: 170px">
-      </div>
+    <div id="load_generator_cometd_latency" class="graph" style="width: 85%;height: 170px">
+    </div>
   </div>
   <div class="graph-container floating-box-cometd-cpu" align="right" >
     <div id="load_generator_cometd_cpu" class="graph" style="width: 85%;height: 170px">
@@ -16,7 +16,6 @@
     <div id="load_generator_cometd_garbage" class="graph" style="width: 85%;height: 170px">
     </div>
   </div>
-
 
 
   <script type="text/javascript" language="javascript">
@@ -36,7 +35,12 @@
           youngGarbage_value: value.loadResults.results.gc.youngGarbage.value,
           youngGarbage_unit: value.loadResults.results.gc.youngGarbage.unit,
           youngGarbage_time_value: value.loadResults.results.gc.youngTime.value,
-          youngGarbage_time_unit: value.loadResults.results.gc.youngTime.unit
+          youngGarbage_time_unit: value.loadResults.results.gc.youngTime.unit,
+          oldGarbage_count: value.loadResults.results.gc.oldCount,
+          oldGarbage_value: value.loadResults.results.gc.oldGarbage.value,
+          oldGarbage_unit: value.loadResults.results.gc.oldGarbage.unit,
+          oldGarbage_time_value: value.loadResults.results.gc.oldTime.value,
+          oldGarbage_time_unit: value.loadResults.results.gc.oldTime.unit
         });
       });
 
@@ -44,8 +48,8 @@
         element: 'load_generator_cometd_latency',
         data: resultValues,
         xkey: 'buildId',
-        ykeys: ['p50', 'min', 'p99', 'max'],
-        labels: ['p50', 'min', 'p99', 'max'],
+        ykeys: ['p50', 'p99', 'max'],
+        labels: ['p50', 'p99', 'max'],
         resize: true,
         pointSize: 1,
         parseTime: false,
@@ -93,10 +97,14 @@
           return 'Build #' + x.src.buildId;
         },
         hoverCallback: function (index, options, content, row) {
-          return "young garbage: " + row.youngGarbage_value + ' ' + row.youngGarbage_unit + ', ' + row.youngGarbage_count + ' collections';
+          var str = "yg: " + row.youngGarbage_value + ' ' + row.youngGarbage_unit + ', ' + row.youngGarbage_count + ' collections'
+              + ";og: " + row.oldGarbage_value + ' ' + row.oldGarbage_unit + ', ' + row.oldGarbage_count + ' collections';
+          return str;
         }
       });
 
+
+    //jQueryLoadGenerator.("#cometd_garbage_caption").value = 'foo';
 
     });
   </script>
