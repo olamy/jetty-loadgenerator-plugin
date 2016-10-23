@@ -4,6 +4,7 @@
     margin: 3px 0;
     padding-top: 10px;
     position: relative;
+    text-align: right;
 }
 .graph-container::after {
     background-color: #eeeeee;
@@ -23,7 +24,7 @@
 .floating-box::after{
     content: 'Load Generator Trend';
 }
-
+/*
 .floating-box-cometd-latency::after{
     content: 'Latency Trend ms';
 }
@@ -33,3 +34,4 @@
 .floating-box-cometd-garbageop::after{
     content: 'Garbage Trend';
 }
+*/

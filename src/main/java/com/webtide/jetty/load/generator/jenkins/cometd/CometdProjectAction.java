@@ -25,6 +25,7 @@ import hudson.model.Actionable;
 import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
@@ -87,6 +88,48 @@ public class CometdProjectAction
         objectMapper.writeValue( rsp.getOutputStream(), datas );
 
         //rsp.getWriter().write( data );
+
+    }
+
+    public void doCometdCss( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
+    {
+
+        Run run = JenkinsUtils.getLastRun( project);
+        if (run !=null)
+        {
+            CometdResultBuildAction buildAction = run.getAction( CometdResultBuildAction.class );
+            if (buildAction != null &&  buildAction.getLoadResults() != null)
+            {
+                LoadResults loadResults = buildAction.getLoadResults();
+
+                String css = ".floating-box-cometd-latency::after { "
+                    + " content: 'Latency Trend " + loadResults.getResults().getLatency().getMax().getUnit() + "' " //
+                    + " } " //
+                    + " .floating-box-cometd-cpu::after {" //
+                    + " content: 'Cpu Trend " + loadResults.getResults().getCpu().getUnit() + "'" //
+                    + " } " //
+                    + " .floating-box-cometd-garbage::after { "
+                    + " content: 'Garbage Trend " +  loadResults.getResults().getGc().getOldGarbage().getUnit() //
+                    + " " + loadResults.getConfig().getCores() + " cores '"//
+                    + " }";
+
+                rsp.getWriter().print( css );
+                return;
+            }
+        }
+
+        String css = ".floating-box-cometd-latency::after { "
+            + " content: 'No data' " //
+        + " } " //
+        + " .floating-box-cometd-cpu::after {" //
+        + " content: 'No data' " //
+        + " } " //
+        + " .floating-box-cometd-garbage::after { "
+        + " content: 'No data' " //
+        + " }";
+        rsp.getWriter().print( css );
+
 
     }
 

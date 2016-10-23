@@ -2,6 +2,7 @@ package com.webtide.jetty.load.generator.jenkins;
 
 import hudson.model.Hudson;
 import hudson.model.Job;
+import hudson.model.Run;
 import hudson.util.RunList;
 
 /**
@@ -30,6 +31,19 @@ public class JenkinsUtils
             }
         }
         return new RunList<>();
+    }
+
+
+    public static Run getLastRun(Job<?, ?> project) {
+        try
+        {
+            return project.getLastBuild();
+        }
+        catch ( Exception e )
+        {
+            // olamy really crapyy bu Jenkins generate NPE
+        }
+        return null;
     }
 
 }

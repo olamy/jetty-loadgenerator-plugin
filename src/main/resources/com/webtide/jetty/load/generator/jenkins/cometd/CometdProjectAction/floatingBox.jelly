@@ -3,16 +3,22 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:local="local"
          xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
+
+  <link rel="stylesheet" type="text/css" href="loadgenerator/cometdCss"/>
   <m:import/>
-  <div class="graph-container floating-box-cometd-latency" align="right" >
+
+
+
+  <div class="graph-container floating-box-cometd-latency">
     <div id="load_generator_cometd_latency" class="graph" style="width: 85%;height: 170px">
     </div>
   </div>
-  <div class="graph-container floating-box-cometd-cpu" align="right" >
+  <div class="graph-container floating-box-cometd-cpu">
     <div id="load_generator_cometd_cpu" class="graph" style="width: 85%;height: 170px">
     </div>
   </div>
-  <div class="graph-container floating-box-cometd-garbage" align="right" >
+
+  <div class="graph-container floating-box-cometd-garbage">
     <div id="load_generator_cometd_garbage" class="graph" style="width: 85%;height: 170px">
     </div>
   </div>
@@ -43,6 +49,7 @@
           oldGarbage_time_unit: value.loadResults.results.gc.oldTime.unit
         });
       });
+
 
       var latencyGraph = Morris.Line({
         element: 'load_generator_cometd_latency',
