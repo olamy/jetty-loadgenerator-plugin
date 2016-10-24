@@ -91,7 +91,6 @@ public class LoadGeneratorProcessFactory
         if (jvmExtraArgs != null)
         {
             args.addTokenized( jvmExtraArgs );
-            //args.add( jvmExtraArgs );
         }
 
 
