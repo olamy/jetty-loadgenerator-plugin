@@ -51,5 +51,8 @@
         </j:forEach>
       </select>
     </f:entry>
+    <f:entry title="${%JVM Extra Args}" field="jvmExtraArgs">
+      <f:textbox />
+    </f:entry>
   </f:advanced>
 </j:jelly>

@@ -128,6 +128,8 @@ public class LoadGeneratorBuilder
 
     private String jdkName;
 
+    private String jvmExtraArgs;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, String port, int users, String profileFromFile,
@@ -148,21 +150,22 @@ public class LoadGeneratorBuilder
     }
 
     public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, String port, int users,
-                                 String profileXmlFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
-                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol )
+                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
+                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol, String jvmExtraArgs )
     {
         this.profileGroovy = null;
         this.loadProfile = resourceProfile;
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileFromFile = profileXmlFromFile;
+        this.profileFromFile = profileFromFile;
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
         this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.jvmExtraArgs = jvmExtraArgs;
     }
 
     public String getProfileGroovy()
@@ -244,6 +247,17 @@ public class LoadGeneratorBuilder
     public void setJdkName( String jdkName )
     {
         this.jdkName = jdkName;
+    }
+
+    public String getJvmExtraArgs()
+    {
+        return jvmExtraArgs;
+    }
+
+    @DataBoundSetter
+    public void setJvmExtraArgs( String jvmExtraArgs )
+    {
+        this.jvmExtraArgs = jvmExtraArgs;
     }
 
     @Override
@@ -378,7 +392,7 @@ public class LoadGeneratorBuilder
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
-                                                     listeners, args );
+                                                     listeners, args, getJvmExtraArgs() );
 
         // handle reports
 

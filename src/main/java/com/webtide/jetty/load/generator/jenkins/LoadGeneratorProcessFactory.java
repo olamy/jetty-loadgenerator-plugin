@@ -66,7 +66,8 @@ public class LoadGeneratorProcessFactory
 {
 
 
-    public Channel buildChannel( TaskListener listener, JDK jdk, FilePath slaveRoot, Launcher launcher )
+    public Channel buildChannel( TaskListener listener, JDK jdk, FilePath slaveRoot, Launcher launcher, //
+                                 String jvmExtraArgs )
         throws Exception
     {
 
@@ -86,6 +87,13 @@ public class LoadGeneratorProcessFactory
         {
             args.add( "-Xrunjdwp:transport=dt_socket,server=y,address=" + DEBUG_PORT );
         }
+
+        if (jvmExtraArgs != null)
+        {
+            args.addTokenized( jvmExtraArgs );
+            //args.add( jvmExtraArgs );
+        }
+
 
         String remotingJar = launcher.getChannel().call( new GetRemotingJar() );
 

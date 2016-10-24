@@ -68,11 +68,13 @@ public class LoadGeneratorBuilderStep
 
     private String jdkName;
 
+    private String jvmExtraArgs;
+
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, String port, int users,
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
                                      String runIteration, int transactionRate, LoadGenerator.Transport transport,
-                                     boolean secureProtocol )
+                                     boolean secureProtocol, String jvmExtraArgs )
     {
         this.resourceProfile = resourceProfile;
         this.host = host;
@@ -85,6 +87,7 @@ public class LoadGeneratorBuilderStep
         this.transactionRate = transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.jvmExtraArgs = jvmExtraArgs;
     }
 
     public ResourceProfile getResourceProfile()
@@ -140,6 +143,11 @@ public class LoadGeneratorBuilderStep
     public boolean isSecureProtocol()
     {
         return secureProtocol;
+    }
+
+    public String getJvmExtraArgs()
+    {
+        return jvmExtraArgs;
     }
 
     @DataBoundSetter

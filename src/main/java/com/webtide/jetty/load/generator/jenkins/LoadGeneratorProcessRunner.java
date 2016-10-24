@@ -39,7 +39,7 @@ public class LoadGeneratorProcessRunner
 {
 
     public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName,
-                            Node currentNode, List<?> responseTimeListeners, List<String> args )
+                            Node currentNode, List<?> responseTimeListeners, List<String> args, String jvmExtraArgs )
         throws Exception
     {
         Channel channel = null;
@@ -49,7 +49,7 @@ public class LoadGeneratorProcessRunner
             long start = System.nanoTime();
 
             JDK jdk = jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
-            channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher );
+            channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
 
             channel.call( new LoadCaller( args, responseTimeListeners ) );
 
