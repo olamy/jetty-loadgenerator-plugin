@@ -21,17 +21,17 @@
     width: 100%;
 }
 
+
+.graph-container-title {
+    background-color: #eeeeee;
+    border: 1px solid #ccc;
+    display: block;
+    font-size: 12px;
+    left: -1px;
+    padding: 3px;
+    top: 3px;
+}
+
 .floating-box::after{
     content: 'Load Generator Trend';
 }
-/*
-.floating-box-cometd-latency::after{
-    content: 'Latency Trend ms';
-}
-.floating-box-cometd-cpu::after{
-    content: 'Cpu Trend';
-}
-.floating-box-cometd-garbageop::after{
-    content: 'Garbage Trend';
-}
-*/

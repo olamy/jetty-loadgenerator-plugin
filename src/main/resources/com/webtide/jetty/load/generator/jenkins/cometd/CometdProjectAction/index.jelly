@@ -3,41 +3,42 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:local="local"
          xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
-
-  <div style="width: 450px">
-
+  <l:layout title="Cometd Result">
     <m:import/>
+    <l:main-panel>
 
-    <div class="graph-container-title" id="latency_title"></div>
-    <div class="graph-container floating-box-cometd-latency">
-      <div id="load_generator_cometd_latency" class="graph" style="width: 95%;height: 170px">
+
+
+      <div class="graph-container-title" id="latency_title"></div>
+      <div class="graph-container floating-box-cometd-latency">
+        <div id="load_generator_cometd_latency" class="graph" style="width: 95%;height: 170px">
+        </div>
       </div>
-    </div>
 
-    <div class="graph-container-title" id="cpu_title"></div>
-    <div class="graph-container floating-box-cometd-cpu">
-      <div id="load_generator_cometd_cpu" class="graph" style="width: 95%;height: 170px">
+      <div class="graph-container-title" id="cpu_title"></div>
+      <div class="graph-container floating-box-cometd-cpu">
+        <div id="load_generator_cometd_cpu" class="graph" style="width: 95%;height: 170px">
+        </div>
       </div>
-    </div>
 
-    <div class="graph-container-title" id="garbage_title"></div>
-    <div class="graph-container floating-box-cometd-garbage">
-      <div id="load_generator_cometd_garbage" class="graph" style="width: 95%;height: 170px">
+      <div class="graph-container-title" id="garbage_title"></div>
+      <div class="graph-container floating-box-cometd-garbage">
+        <div id="load_generator_cometd_garbage" class="graph" style="width: 95%;height: 170px">
+        </div>
       </div>
-    </div>
 
-  </div>
-
+    </l:main-panel>
+  </l:layout>
   <script type="text/javascript" language="javascript">
     jQueryLoadGenerator.noConflict();
 
-    jQueryLoadGenerator.getJSON("loadgenerator/titles", function (json) {
+    jQueryLoadGenerator.getJSON("titles", function (json) {
       jQueryLoadGenerator("#latency_title").text(json.latency);
       jQueryLoadGenerator("#cpu_title").text(json.cpu);
       jQueryLoadGenerator("#garbage_title").text(json.garbage);
     });
 
-    jQueryLoadGenerator.getJSON("loadgenerator/trend", function (json) {
+    jQueryLoadGenerator.getJSON("trend", function (json) {
 
       var resultValues = [];
       jQueryLoadGenerator.each(json, function( index, value ) {

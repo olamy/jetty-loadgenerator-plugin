@@ -7,7 +7,7 @@
           <p>
             <h3>Global results</h3>
             <ul>
-              <li>Total requests: ${infos.totalCount} </li>
+              <li>Total requests: ${infos.totalCount}</li>
               <li>Minimum responseTime: ${infos.minValue} ms</li>
               <li>Maximum responseTime: ${infos.maxValue} ms</li>
               <li>mean responseTime: ${infos.mean} ms</li>

@@ -25,7 +25,6 @@ import hudson.model.Actionable;
 import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
@@ -33,10 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -91,45 +91,37 @@ public class CometdProjectAction
 
     }
 
-    public void doCometdCss( StaplerRequest req, StaplerResponse rsp )
+
+
+    public void doTitles( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
     {
+        Map<String, String> titles = new HashMap<>();
 
-        Run run = JenkinsUtils.getLastRun( project);
-        if (run !=null)
+        Run run = JenkinsUtils.getLastRun( project );
+        if ( run != null )
         {
             CometdResultBuildAction buildAction = run.getAction( CometdResultBuildAction.class );
-            if (buildAction != null &&  buildAction.getLoadResults() != null)
+            if ( buildAction != null && buildAction.getLoadResults() != null )
             {
                 LoadResults loadResults = buildAction.getLoadResults();
 
-                String css = ".floating-box-cometd-latency::after { "
-                    + " content: 'Latency Trend " + loadResults.getResults().getLatency().getMax().getUnit() + "' " //
-                    + " } " //
-                    + " .floating-box-cometd-cpu::after {" //
-                    + " content: 'Cpu Trend " + loadResults.getResults().getCpu().getUnit() + "'" //
-                    + " } " //
-                    + " .floating-box-cometd-garbage::after { "
-                    + " content: 'Garbage Trend " +  loadResults.getResults().getGc().getOldGarbage().getUnit() //
-                    + " " + loadResults.getConfig().getCores() + " cores '"//
-                    + " }";
-
-                rsp.getWriter().print( css );
-                return;
+                titles.put( "latency", "Latency Trend " + loadResults.getResults().getLatency().getMax().getUnit() );
+                titles.put( "cpu", "Cpu Trend " + loadResults.getResults().getCpu().getUnit() + ", " //
+                    + " " + loadResults.getConfig().getCores() + " cores " );
+                titles.put( "garbage", "Garbage Trend " + loadResults.getResults().getGc().getOldGarbage().getUnit() );
             }
         }
+        else
+        {
+            titles.put( "latency", "No Data" );
+            titles.put( "cpu", "No Data" );
+            titles.put( "garbage", "No Data" );
+        }
 
-        String css = ".floating-box-cometd-latency::after { "
-            + " content: 'No data' " //
-        + " } " //
-        + " .floating-box-cometd-cpu::after {" //
-        + " content: 'No data' " //
-        + " } " //
-        + " .floating-box-cometd-garbage::after { "
-        + " content: 'No data' " //
-        + " }";
-        rsp.getWriter().print( css );
+        rsp.addHeader( "Content-Type", "application/json; charset=utf-8" );
 
+        new ObjectMapper().writeValue( rsp.getOutputStream(), titles );
 
     }
 
