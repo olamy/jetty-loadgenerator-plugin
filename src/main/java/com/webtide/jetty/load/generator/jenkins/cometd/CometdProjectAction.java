@@ -18,13 +18,12 @@
 package com.webtide.jetty.load.generator.jenkins.cometd;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.webtide.jetty.load.generator.jenkins.JenkinsUtils;
 import com.webtide.jetty.load.generator.jenkins.PluginConstants;
 import com.webtide.jetty.load.generator.jenkins.cometd.beans.LoadResults;
 import hudson.model.Actionable;
-import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
+import hudson.util.RunList;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;
@@ -49,11 +48,14 @@ public class CometdProjectAction
 
     private static final Logger LOGGER = LoggerFactory.getLogger( CometdProjectAction.class );
 
-    private final Job<?, ?> project;
+    private final transient RunList<?> builds;
 
-    public CometdProjectAction( Job<?, ?> project )
+    private final transient Run<?,?> lastRun;
+
+    public CometdProjectAction( RunList<?> builds, Run<?,?> lastRun )
     {
-        this.project = project;
+        this.builds = builds == null ? new RunList<>() : builds;
+        this.lastRun = lastRun;
     }
 
     public void doTrend( StaplerRequest req, StaplerResponse rsp )
@@ -63,7 +65,7 @@ public class CometdProjectAction
 
         List<BuildLoadResults> datas = new ArrayList<>();
 
-        for ( Run run : JenkinsUtils.getCompleteRunList( project ) )
+        for ( Run run : builds )
         {
             CometdResultBuildAction buildAction = run.getAction( CometdResultBuildAction.class );
             if ( buildAction != null )
@@ -98,10 +100,10 @@ public class CometdProjectAction
     {
         Map<String, String> titles = new HashMap<>();
 
-        Run run = JenkinsUtils.getLastRun( project );
-        if ( run != null )
+
+        if ( lastRun != null )
         {
-            CometdResultBuildAction buildAction = run.getAction( CometdResultBuildAction.class );
+            CometdResultBuildAction buildAction = lastRun.getAction( CometdResultBuildAction.class );
             if ( buildAction != null && buildAction.getLoadResults() != null )
             {
                 LoadResults loadResults = buildAction.getLoadResults();

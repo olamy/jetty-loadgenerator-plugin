@@ -21,10 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
-import hudson.model.Job;
 import hudson.model.Run;
-import hudson.model.TopLevelItem;
-import jenkins.model.Jenkins;
+import hudson.util.RunList;
+import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
@@ -44,7 +43,7 @@ import java.util.Map;
  *
  */
 public class LoadGeneratorBuildAction
-    implements HealthReportingAction, SimpleBuildStep.LastBuildAction
+    implements HealthReportingAction, SimpleBuildStep.LastBuildAction, RunAction2
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuildAction.class );
@@ -59,9 +58,11 @@ public class LoadGeneratorBuildAction
 
     private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
 
-    private Job job;
+    private String jobName;
 
     private String buildId;
+
+    private transient RunList<?> builds;
 
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
                                      CollectorInformations globalCollectorInformations,
@@ -72,7 +73,7 @@ public class LoadGeneratorBuildAction
         this.summaryReport = summaryReport;
         this.globalCollectorInformations = globalCollectorInformations;
         this.perPath = perPath;
-        this.job = run.getParent();
+        this.jobName = run.getParent().getName();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
         this.buildId = run.getId();
     }
@@ -106,9 +107,20 @@ public class LoadGeneratorBuildAction
     @Override
     public Collection<? extends Action> getProjectActions()
     {
-        return Arrays.asList( new LoadGeneratorProjectAction( this.job ));
+        return Arrays.asList( new LoadGeneratorProjectAction( this.builds ));
     }
 
+    @Override
+    public void onAttached( Run<?, ?> r )
+    {
+        onLoad( r );
+    }
+
+    @Override
+    public void onLoad( Run<?, ?> r )
+    {
+        this.builds = r.getParent().getBuilds();
+    }
 
     @Override
     public HealthReport getBuildHealth()

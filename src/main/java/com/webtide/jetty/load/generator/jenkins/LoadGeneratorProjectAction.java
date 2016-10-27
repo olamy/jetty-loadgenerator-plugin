@@ -19,8 +19,6 @@ package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.model.Actionable;
-import hudson.model.Hudson;
-import hudson.model.Job;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
@@ -47,11 +45,11 @@ public class LoadGeneratorProjectAction
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorProjectAction.class );
 
-    private final Job<?, ?> project;
+    private final transient RunList<?> builds;
 
-    public LoadGeneratorProjectAction( Job<?, ?> project )
+    public LoadGeneratorProjectAction( RunList<?> builds )
     {
-        this.project = project;
+        this.builds = builds == null ? new RunList<>() : builds;
     }
 
 
@@ -63,7 +61,7 @@ public class LoadGeneratorProjectAction
 
         List<RunInformations> datas = new ArrayList<>();
 
-        for ( Run run : JenkinsUtils.getCompleteRunList(project) )
+        for ( Run run : this.builds )
         {
             LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
             if ( buildAction != null )
@@ -88,7 +86,6 @@ public class LoadGeneratorProjectAction
         return stringWriter.toString();
 
     }
-
 
     public static class RunInformations
         extends CollectorInformations

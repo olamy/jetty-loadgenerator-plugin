@@ -21,8 +21,9 @@ import com.webtide.jetty.load.generator.jenkins.cometd.beans.LoadResults;
 import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
-import hudson.model.Job;
 import hudson.model.Run;
+import hudson.util.RunList;
+import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
 
 import java.util.Arrays;
@@ -32,7 +33,7 @@ import java.util.Collection;
  *
  */
 public class CometdResultBuildAction
-    implements HealthReportingAction, SimpleBuildStep.LastBuildAction
+    implements HealthReportingAction, SimpleBuildStep.LastBuildAction, RunAction2
 {
 
     private final LoadResults loadResults;
@@ -41,14 +42,18 @@ public class CometdResultBuildAction
 
     private final String buildId;
 
-    private final Job job;
+    private final String jobName;
+
+    private transient RunList<?> builds;
+
+    private transient Run<?,?> lastRun;
 
     public CometdResultBuildAction( HealthReport healthReport, LoadResults loadResults, Run<?, ?> run )
     {
         this.loadResults = loadResults;
         this.healthReport = healthReport;
         this.buildId = run.getId();
-        this.job = run.getParent();
+        this.jobName = run.getParent().getName();
     }
 
     @Override
@@ -65,7 +70,20 @@ public class CometdResultBuildAction
     @Override
     public Collection<? extends Action> getProjectActions()
     {
-        return Arrays.asList( new CometdProjectAction( this.job ) );
+        return Arrays.asList( new CometdProjectAction( this.builds, this.lastRun ) );
+    }
+
+    @Override
+    public void onAttached( Run<?, ?> r )
+    {
+        onLoad( r );
+    }
+
+    @Override
+    public void onLoad( Run<?, ?> r )
+    {
+        this.builds = r.getParent().getBuilds();
+        this.lastRun = r.getParent().getLastBuild();
     }
 
     @Override
