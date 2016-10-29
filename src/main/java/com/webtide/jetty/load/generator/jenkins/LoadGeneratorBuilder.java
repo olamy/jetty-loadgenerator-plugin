@@ -507,6 +507,7 @@ public class LoadGeneratorBuilder
         cmdLine.add( "-pjp" ).add( tmpFilePath );
         cmdLine.add( "-h" ).add( expandTokens( taskListener, host, run ) );
         cmdLine.add( "-p" ).add( expandTokens( taskListener, port, run ) );
+        cmdLine.add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) );
 
         if ( NumberUtils.isNumber( runIteration ) && Integer.parseInt( runIteration ) > 0 )
         {
