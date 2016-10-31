@@ -695,7 +695,7 @@ public class LoadGeneratorBuilder
                     .append( values.getSize() );
 
                 this.bufferedWriter.write( sb.toString() );
-                this.bufferedWriter.newLine();//. write( sb.toString() + System.lineSeparator() );
+                this.bufferedWriter.newLine();
             }
             catch ( IOException e )
             {
