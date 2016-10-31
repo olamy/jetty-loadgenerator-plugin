@@ -48,7 +48,7 @@ public class LoadGeneratorBuilderStep
 
     private String host;
 
-    private String port;
+    private int port;
 
     private int users;
 
@@ -58,7 +58,7 @@ public class LoadGeneratorBuilderStep
 
     private TimeUnit runningTimeUnit;
 
-    private String runIteration;
+    private int runIteration;
 
     private int transactionRate;
 
@@ -71,9 +71,9 @@ public class LoadGeneratorBuilderStep
     private String jvmExtraArgs;
 
     @DataBoundConstructor
-    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, String port, int users,
+    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
-                                     String runIteration, int transactionRate, LoadGenerator.Transport transport,
+                                     int runIteration, int transactionRate, LoadGenerator.Transport transport,
                                      boolean secureProtocol, String jvmExtraArgs )
     {
         this.resourceProfile = resourceProfile;
@@ -100,7 +100,7 @@ public class LoadGeneratorBuilderStep
         return host;
     }
 
-    public String getPort()
+    public int getPort()
     {
         return port;
     }
@@ -125,7 +125,7 @@ public class LoadGeneratorBuilderStep
         return runningTimeUnit;
     }
 
-    public String getRunIteration()
+    public int getRunIteration()
     {
         return runIteration;
     }

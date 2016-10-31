@@ -54,13 +54,13 @@ public class LoadGeneratorBuilderStepExecution
     {
         LoadGeneratorBuilder builder = new LoadGeneratorBuilder( loadGeneratorBuilderStep.getResourceProfile(), //
                                                                  loadGeneratorBuilderStep.getHost(), //
-                                                                 loadGeneratorBuilderStep.getPort(), //
-                                                                 loadGeneratorBuilderStep.getUsers(), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getPort() ), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getUsers() ), //
                                                                  loadGeneratorBuilderStep.getProfileFromFile(), //
                                                                  loadGeneratorBuilderStep.getRunningTime(), //
                                                                  loadGeneratorBuilderStep.getRunningTimeUnit(), //
-                                                                 loadGeneratorBuilderStep.getRunIteration(), //
-                                                                 loadGeneratorBuilderStep.getTransactionRate(), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getRunIteration() ), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getTransactionRate() ), //
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs());

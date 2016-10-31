@@ -51,7 +51,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
@@ -106,7 +105,7 @@ public class LoadGeneratorBuilder
 
     private final String port;
 
-    private final int users;
+    private final String users;
 
     private final String profileFromFile;
 
@@ -116,7 +115,7 @@ public class LoadGeneratorBuilder
 
     private final String runIteration;
 
-    private final int transactionRate;
+    private final String transactionRate;
 
     private List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
 
@@ -132,8 +131,8 @@ public class LoadGeneratorBuilder
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public LoadGeneratorBuilder( String profileGroovy, String host, String port, int users, String profileFromFile,
-                                 String runningTime, TimeUnit runningTimeUnit, String runIteration, int transactionRate,
+    public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
+                                 String runningTime, TimeUnit runningTimeUnit, String runIteration, String transactionRate,
                                  LoadGenerator.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
@@ -144,27 +143,19 @@ public class LoadGeneratorBuilder
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
-        this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
+        this.transactionRate = StringUtils.isEmpty( transactionRate ) ? "1" : transactionRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
     }
 
-    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, String port, int users,
+    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, String port, String users,
                                  String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
-                                 int transactionRate, LoadGenerator.Transport transport, boolean secureProtocol, String jvmExtraArgs )
+                                 String transactionRate, LoadGenerator.Transport transport, boolean secureProtocol, String jvmExtraArgs )
     {
-        this.profileGroovy = null;
+
+        this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, transactionRate,
+              transport, secureProtocol );
         this.loadProfile = resourceProfile;
-        this.host = host;
-        this.port = port;
-        this.users = users;
-        this.profileFromFile = profileFromFile;
-        this.runningTime = runningTime;
-        this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
-        this.runIteration = runIteration;
-        this.transactionRate = transactionRate == 0 ? 1 : transactionRate;
-        this.transport = transport;
-        this.secureProtocol = secureProtocol;
         this.jvmExtraArgs = jvmExtraArgs;
     }
 
@@ -183,7 +174,7 @@ public class LoadGeneratorBuilder
         return port;
     }
 
-    public int getUsers()
+    public String getUsers()
     {
         return users;
     }
@@ -213,7 +204,7 @@ public class LoadGeneratorBuilder
         this.responseTimeListeners.add( responseTimeListener );
     }
 
-    public int getTransactionRate()
+    public String getTransactionRate()
     {
         return transactionRate;
     }
@@ -508,8 +499,10 @@ public class LoadGeneratorBuilder
         cmdLine.add( "-h" ).add( expandTokens( taskListener, host, run ) );
         cmdLine.add( "-p" ).add( expandTokens( taskListener, port, run ) );
         cmdLine.add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) );
+        cmdLine.add( "-u" ).add( expandTokens( taskListener, users, run ) );
+        cmdLine.add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) );
 
-        if ( NumberUtils.isNumber( runIteration ) && Integer.parseInt( runIteration ) > 0 )
+        if ( StringUtils.isNotBlank( runIteration ) )
         {
             cmdLine.add( "-ri" ).add( expandTokens( taskListener, runIteration, run) );
         }
