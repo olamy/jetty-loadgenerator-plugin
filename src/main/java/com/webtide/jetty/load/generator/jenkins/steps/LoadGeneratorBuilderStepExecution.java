@@ -63,7 +63,9 @@ public class LoadGeneratorBuilderStepExecution
                                                                  Integer.toString( loadGeneratorBuilderStep.getTransactionRate() ), //
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
-                                                                 loadGeneratorBuilderStep.getJvmExtraArgs());
+                                                                 loadGeneratorBuilderStep.getJvmExtraArgs(), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ) );
+        builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
 
         builder.doRun( taskListener, filePath, run, launcher );
 
