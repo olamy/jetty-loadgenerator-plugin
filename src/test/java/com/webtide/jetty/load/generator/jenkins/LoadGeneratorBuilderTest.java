@@ -131,12 +131,12 @@ public class LoadGeneratorBuilderTest
             new LoadGeneratorBuilder( IOUtils.toString( inputStream ), //
                                       "localhost", //
                                       Integer.toString( connector.getLocalPort()), //
-                                      1, //
+                                      "1", //
                                       "",  //
                                       Integer.toString( 20 ), //
                                       TimeUnit.SECONDS, //
                                       Integer.toString(iteration), //
-                                      1, //
+                                      "1", //
                                       LoadGenerator.Transport.HTTP, //
                                       false );
 
