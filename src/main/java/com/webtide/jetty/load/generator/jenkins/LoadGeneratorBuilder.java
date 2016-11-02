@@ -55,13 +55,13 @@ import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.ValueListener;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
-import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
-import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
+import org.eclipse.jetty.load.generator.report.DetailledTimeValuesReport;
+import org.eclipse.jetty.load.generator.report.DetailledTimeReportListener;
 import org.eclipse.jetty.load.generator.report.GlobalSummaryListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimePerPathListener;
+import org.eclipse.jetty.load.generator.responsetime.TimePerPathListener;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -391,13 +391,13 @@ public class LoadGeneratorBuilder
         // handle response time reports
         // -----------------------------
 
-        ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
+        TimePerPathListener responseTimePerPath = new TimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
         // this one will use some memory for a long load test!!
         // FIXME find a way to flush that somewhere!!
-        DetailledResponseTimeReportListener detailledResponseTimeReportListener =
-            new DetailledResponseTimeReportListener();
+        DetailledTimeReportListener detailledTimeReportListener =
+            new DetailledTimeReportListener();
 
         responseTimeListeners.clear();
         if ( this.responseTimeListeners != null )
@@ -407,7 +407,7 @@ public class LoadGeneratorBuilder
         responseTimeListeners.add( responseNumberPerPath );
         responseTimeListeners.add( responseTimePerPath );
         responseTimeListeners.add( globalSummaryListener );
-        responseTimeListeners.add( detailledResponseTimeReportListener );
+        responseTimeListeners.add( detailledTimeReportListener );
 
         // get remote file
 
@@ -439,9 +439,9 @@ public class LoadGeneratorBuilder
 
         SummaryReport summaryReport = new SummaryReport(run.getId());
 
-        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getRecorderPerPath().size() );
+        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getResponseTimePerPath().size() );
 
-        for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getRecorderPerPath().entrySet() )
+        for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getResponseTimePerPath().entrySet() )
         {
             String path = entry.getKey();
             Histogram histogram = entry.getValue().getIntervalHistogram();
@@ -459,7 +459,7 @@ public class LoadGeneratorBuilder
 
         Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
 
-        for ( DetailledResponseTimeReport.Entry entry : detailledResponseTimeReportListener.getDetailledResponseTimeReport().getEntries() )
+        for ( DetailledTimeValuesReport.Entry entry : detailledTimeReportListener.getDetailledResponseTimeValuesReport().getEntries() )
         {
             List<ResponseTimeInfo> responseTimeInfos = allResponseInfoTimePerPath.get( entry.getPath() );
             if ( responseTimeInfos == null )
