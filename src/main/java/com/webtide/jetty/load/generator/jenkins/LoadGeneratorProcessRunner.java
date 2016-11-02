@@ -25,6 +25,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
+import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -38,8 +39,10 @@ public class LoadGeneratorProcessRunner
     implements Serializable
 {
 
-    public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName,
-                            Node currentNode, List<?> responseTimeListeners, List<String> args, String jvmExtraArgs )
+    public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName, //
+                            Node currentNode, List<?> responseTimeListeners,
+                            List<LatencyTimeListener> latencyTimeListeners, //
+                            List<String> args, String jvmExtraArgs )
         throws Exception
     {
         Channel channel = null;
@@ -48,20 +51,22 @@ public class LoadGeneratorProcessRunner
         {
             long start = System.nanoTime();
 
-            JDK jdk = jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
-            channel = new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
+            JDK jdk =
+                jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
+            channel =
+                new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
 
-            channel.call( new LoadCaller( args, responseTimeListeners ) );
+            channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
 
             long end = System.nanoTime();
 
             taskListener.getLogger().println( "remote LoadGenerator execution done: " //
                                                   + TimeUnit.NANOSECONDS.toMillis( end - start ) //
-                                                  + " ms ");
+                                                  + " ms " );
         }
         finally
         {
-            if (channel != null)
+            if ( channel != null )
             {
                 channel.close();
             }
@@ -77,10 +82,13 @@ public class LoadGeneratorProcessRunner
 
         private final List<?> responseTimeListeners;
 
-        public LoadCaller( List<String> args, List<?> responseTimeListeners )
+        private final List<?> latencyTimeListeners;
+
+        public LoadCaller( List<String> args, List<?> responseTimeListeners, List<?> latencyTimeListeners )
         {
             this.args = args;
             this.responseTimeListeners = responseTimeListeners;
+            this.latencyTimeListeners = latencyTimeListeners;
         }
 
         @Override
@@ -91,9 +99,14 @@ public class LoadGeneratorProcessRunner
 
             Class jenkinsRemoteStarterClazz =
                 classLoader.loadClass( "org.eclipse.jetty.load.generator.starter.JenkinsRemoteStarter" );
+
             Method setResponseTimeListeners =
                 jenkinsRemoteStarterClazz.getMethod( "setResponseTimeListeners", List.class );
             setResponseTimeListeners.invoke( null, responseTimeListeners );
+
+            Method setLatencyTimeListeners =
+                jenkinsRemoteStarterClazz.getMethod( "setLatencyTimeListeners", List.class );
+            setLatencyTimeListeners.invoke( null, latencyTimeListeners );
 
             Method launch = jenkinsRemoteStarterClazz.getMethod( "launch", List.class );
 

@@ -18,10 +18,6 @@
 package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.EventHandler;
-import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.dsl.Disruptor;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Extension;
@@ -57,10 +53,11 @@ import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.ValueListener;
+import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReport;
 import org.eclipse.jetty.load.generator.report.DetailledResponseTimeReportListener;
-import org.eclipse.jetty.load.generator.report.GlobalSummaryReportListener;
+import org.eclipse.jetty.load.generator.report.GlobalSummaryListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
@@ -72,9 +69,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,8 +79,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -363,71 +356,66 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-        List<ResponseTimeListener> listeners = new ArrayList<>();
 
+        // -------------------------
+        // listeners to get data files
+        // -------------------------
+        List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
 
-        // TODO remove that one which is for debug purpose
-        if ( LOGGER.isDebugEnabled() )
-        {
-            listeners.add( new ResponseTimeListener()
-            {
-                @Override
-                public void onResponseTimeValue( Values values )
-                {
-                    LOGGER.debug( "response time {} ms for path: {}", //
-                                  TimeUnit.NANOSECONDS.toMillis( values.getTime() ), //
-                                  values.getPath() );
-                }
-
-                @Override
-                public void onLoadGeneratorStop()
-                {
-                    LOGGER.debug( "stop loadGenerator" );
-                }
-            } );
-
-        }
-
-        Path resultFilePath = Paths.get( launcher //
+        Path responseTimeResultFilePath = Paths.get( launcher //
                                              .getChannel() //
                                              .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
-        ResponseTimeFileWriter responseTimeFileWriter = new ResponseTimeFileWriter( resultFilePath );
-        listeners.add( responseTimeFileWriter );
+        responseTimeListeners.add( new ValuesFileWriter( responseTimeResultFilePath ) );
+
+        List<LatencyTimeListener> latencyTimeListeners = new ArrayList<>();
+
+        Path latencyTimeResultFilePath = Paths.get( launcher //
+                                                         .getChannel() //
+                                                         .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
+
+        latencyTimeListeners.add( new ValuesFileWriter( latencyTimeResultFilePath ) );
+
 
         List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, run );
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
-                                                     listeners, args, getJvmExtraArgs() );
+                                                     responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs() );
 
-        // handle reports
+
+
+        GlobalSummaryListener globalSummaryListener = new GlobalSummaryListener();
+
+        // -----------------------------
+        // handle response time reports
+        // -----------------------------
 
         ResponseTimePerPathListener responseTimePerPath = new ResponseTimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
-        GlobalSummaryReportListener globalSummaryReportListener = new GlobalSummaryReportListener();
+
         // this one will use some memory for a long load test!!
         // FIXME find a way to flush that somewhere!!
         DetailledResponseTimeReportListener detailledResponseTimeReportListener =
             new DetailledResponseTimeReportListener();
 
-        listeners.clear();
+        responseTimeListeners.clear();
         if ( this.responseTimeListeners != null )
         {
-            listeners.addAll( this.responseTimeListeners );
+            responseTimeListeners.addAll( this.responseTimeListeners );
         }
-        listeners.add( responseNumberPerPath );
-        listeners.add( responseTimePerPath );
-        listeners.add( globalSummaryReportListener );
-        listeners.add( detailledResponseTimeReportListener );
+        responseTimeListeners.add( responseNumberPerPath );
+        responseTimeListeners.add( responseTimePerPath );
+        responseTimeListeners.add( globalSummaryListener );
+        responseTimeListeners.add( detailledResponseTimeReportListener );
 
         // get remote file
 
-        LOGGER.info( "LoadGenerator parsing result file" );
+        LOGGER.info( "LoadGenerator parsing response result file" );
 
         Path localResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
 
-        workspace.child( resultFilePath.toString() ).copyTo( Files.newOutputStream( localResultFile ) );
+        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( localResultFile ) );
 
         CSVParser csvParser = new CSVParser( Files.newBufferedReader( localResultFile ), CSVFormat.newFormat( '|' ) );
 
@@ -441,13 +429,11 @@ public class LoadGeneratorBuilder
                     .time( Long.parseLong( strings.get( 3 ) ) ) //
                     .status( Integer.parseInt( strings.get( 4 ) ) ) //
                     .size( Long.parseLong( strings.get( 5 ) ) );
-                for (ResponseTimeListener listener : listeners)
+                for (ResponseTimeListener listener : responseTimeListeners)
                 {
                     listener.onResponseTimeValue( values );
                 }
             } );
-
-        //FilePath projectWorkspaceOnSlave = build.getProject().getWorkspace();
 
         // manage results
 
@@ -489,14 +475,14 @@ public class LoadGeneratorBuilder
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations(
-                                                         globalSummaryReportListener.getHistogram() ), //
+                                                         globalSummaryListener.getResponseTimeHistogram() ), //
                                                      perPath, allResponseInfoTimePerPath, run ) );
 
         // cleanup
 
         getCurrentNode(launcher.getComputer()) //
             .getChannel() //
-            .call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
+            .call( new LoadGeneratorProcessFactory.DeleteTmpFile( responseTimeResultFilePath.toString() ) );
         Files.deleteIfExists( localResultFile );
 
         LOGGER.info( "LoadGenerator end" );
@@ -626,121 +612,6 @@ public class LoadGeneratorBuilder
             node = computer.getNode();
         }
         return node;
-    }
-
-
-    static class ResponseTimeFileWriter
-        implements ResponseTimeListener, Serializable, EventHandler<ValueListener.Values>,
-        EventFactory<ValueListener.Values>
-    {
-
-        private final String filePath;
-
-        private transient BufferedWriter bufferedWriter;
-
-        private transient RingBuffer<Values> ringBuffer;
-
-        public ResponseTimeFileWriter( Path path )
-        {
-            try
-            {
-                this.filePath = path.toAbsolutePath().toString();
-                this.bufferedWriter = Files.newBufferedWriter( path );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e.getMessage(), e );
-            }
-
-        }
-
-        @Override
-        public void onResponseTimeValue( Values values )
-        {
-            this.ringBuffer.publishEvent( ( event, sequence ) -> event.eventTimestamp( values.getEventTimestamp() ) //
-                .method( values.getMethod() ) //
-                .path( values.getPath() ) //
-                .time( values.getTime() ) //
-                .status( values.getStatus() ) //
-                .size( values.getSize() ) );
-        }
-
-        public Object readResolve()
-        {
-            try
-            {
-                this.bufferedWriter = Files.newBufferedWriter( Paths.get( this.filePath ) );
-
-                // Executor that will be used to construct new threads for consumers
-                ExecutorService executor = Executors.newCachedThreadPool();
-
-                // Specify the size of the ring buffer, must be power of 2.
-                int bufferSize = 1024;
-
-                // Construct the Disruptor
-                Disruptor<Values> disruptor = new Disruptor<>( this, bufferSize, executor );
-
-                // Connect the handler
-                disruptor.handleEventsWith( this );
-
-                // Start the Disruptor, starts all threads running
-                disruptor.start();
-
-                this.ringBuffer = disruptor.getRingBuffer();
-
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( e.getMessage(), e );
-            }
-            return this;
-        }
-
-        @Override
-        public void onEvent( Values values, long l, boolean b )
-            throws Exception
-        {
-            try
-            {
-                StringBuilder sb = new StringBuilder( 128 ) //
-                    .append( values.getEventTimestamp() ).append( '|' ) //
-                    .append( values.getMethod() ).append( '|' ) //
-                    .append( values.getPath() ).append( '|' ) //
-                    .append( values.getTime() ).append( '|' ) //
-                    .append( values.getStatus() ).append( '|' ) //
-                    .append( values.getSize() );
-
-                this.bufferedWriter.write( sb.toString() );
-                this.bufferedWriter.newLine();
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public Values newInstance()
-        {
-            return new Values();
-        }
-
-
-        @Override
-        public void onLoadGeneratorStop()
-        {
-            try
-            {
-                this.bufferedWriter.flush();
-                this.bufferedWriter.close();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e.getMessage(), e );
-            }
-            System.out.println( "stop loadGenerator" );
-        }
-
     }
 
 
