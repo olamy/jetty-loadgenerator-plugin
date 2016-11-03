@@ -53,7 +53,7 @@ public class LoadGeneratorProjectAction
     }
 
 
-    public String getGlobalData()
+    public String getAllResponseTimeInformations()
         throws IOException
     {
 
@@ -66,10 +66,10 @@ public class LoadGeneratorProjectAction
             LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
             if ( buildAction != null )
             {
-                if ( buildAction.getGlobalCollectorInformations() != null )
+                if ( buildAction.getGlobalResponseTimeInformations() != null )
                 {
                     RunInformations runInformations =
-                        new RunInformations( run.getId(), buildAction.getGlobalCollectorInformations() );
+                        new RunInformations( run.getId(), buildAction.getGlobalResponseTimeInformations() );
                     datas.add( runInformations );
                 }
             }
@@ -86,6 +86,41 @@ public class LoadGeneratorProjectAction
         return stringWriter.toString();
 
     }
+
+    public String getAllLatencyInformations()
+        throws IOException
+    {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        List<RunInformations> datas = new ArrayList<>();
+
+        for ( Run run : this.builds )
+        {
+            LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
+            if ( buildAction != null )
+            {
+                if ( buildAction.getGlobalLatencyTimeInformations() != null )
+                {
+                    RunInformations runInformations =
+                        new RunInformations( run.getId(), buildAction.getGlobalLatencyTimeInformations() );
+                    datas.add( runInformations );
+                }
+            }
+        }
+
+        // order by buildId
+
+        Collections.sort( datas, ( o1, o2 ) -> Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) ) );
+
+        StringWriter stringWriter = new StringWriter();
+
+        objectMapper.writeValue( stringWriter, datas );
+
+        return stringWriter.toString();
+
+    }
+
 
     public static class RunInformations
         extends CollectorInformations
@@ -119,11 +154,19 @@ public class LoadGeneratorProjectAction
     }
 
 
-    public void doTrend( StaplerRequest req, StaplerResponse rsp )
+    public void doResponseTimeTrend( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
     {
-        LOGGER.debug( "doTrend" );
-        String data = getGlobalData();
+        LOGGER.debug( "doResponseTimeTrend" );
+        String data = getAllResponseTimeInformations();
+        rsp.getWriter().write( data );
+    }
+
+    public void doLatencyTrend( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
+    {
+        LOGGER.debug( "doLatencyTrend" );
+        String data = getAllLatencyInformations();
         rsp.getWriter().write( data );
     }
 

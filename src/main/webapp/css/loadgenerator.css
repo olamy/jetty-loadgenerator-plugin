@@ -32,6 +32,10 @@
     top: 3px;
 }
 
-.floating-box::after{
-    content: 'Load Generator Trend';
+.floating-box-response-time::after{
+    content: 'Load Generator Response Time Trend';
+}
+
+.floating-box-latency-time::after{
+    content: 'Load Generator Latency Time Trend';
 }

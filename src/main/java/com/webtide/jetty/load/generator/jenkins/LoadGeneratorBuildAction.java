@@ -52,9 +52,9 @@ public class LoadGeneratorBuildAction
 
     private final SummaryReport summaryReport;
 
-    private final CollectorInformations globalCollectorInformations;
+    private final CollectorInformations globalResponseTimeInformations;
 
-    private final Map<String, CollectorInformations> perPath;
+    private final CollectorInformations globalLatencyTimeInformations;
 
     private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
 
@@ -65,14 +65,15 @@ public class LoadGeneratorBuildAction
     private transient RunList<?> builds;
 
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
-                                     CollectorInformations globalCollectorInformations,
-                                     Map<String, CollectorInformations> perPath,
-                                     Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath, Run<?,?> run )
+                                     CollectorInformations globalResponseTimeInformations,
+                                     CollectorInformations globalLatencyTimeInformations,
+                                     Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath,
+                                     Run<?,?> run )
     {
         this.health = health;
         this.summaryReport = summaryReport;
-        this.globalCollectorInformations = globalCollectorInformations;
-        this.perPath = perPath;
+        this.globalResponseTimeInformations = globalResponseTimeInformations;
+        this.globalLatencyTimeInformations = globalLatencyTimeInformations;
         this.jobName = run.getParent().getName();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
         this.buildId = run.getId();
@@ -83,9 +84,14 @@ public class LoadGeneratorBuildAction
         return summaryReport;
     }
 
-    public CollectorInformations getGlobalCollectorInformations()
+    public CollectorInformations getGlobalResponseTimeInformations()
     {
-        return globalCollectorInformations;
+        return globalResponseTimeInformations;
+    }
+
+    public CollectorInformations getGlobalLatencyTimeInformations()
+    {
+        return globalLatencyTimeInformations;
     }
 
     public Map<String, List<ResponseTimeInfo>> getAllResponseInfoTimePerPath()
@@ -134,7 +140,7 @@ public class LoadGeneratorBuildAction
 
     public Map<String, CollectorInformations> getPerPath()
     {
-        return perPath;
+        return summaryReport.getResponseTimeInformationsPerPath();
     }
 
     @Override

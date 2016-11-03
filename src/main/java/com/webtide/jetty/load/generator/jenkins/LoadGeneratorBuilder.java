@@ -385,19 +385,18 @@ public class LoadGeneratorBuilder
 
 
 
+
+        TimePerPathListener timePerPathListener = new TimePerPathListener( false );
         GlobalSummaryListener globalSummaryListener = new GlobalSummaryListener();
+        // this one will use some memory for a long load test!!
+        // FIXME find a way to flush that somewhere!!
+        DetailledTimeReportListener detailledTimeReportListener = new DetailledTimeReportListener();
 
         // -----------------------------
         // handle response time reports
         // -----------------------------
 
-        TimePerPathListener responseTimePerPath = new TimePerPathListener( false );
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
-
-        // this one will use some memory for a long load test!!
-        // FIXME find a way to flush that somewhere!!
-        DetailledTimeReportListener detailledTimeReportListener =
-            new DetailledTimeReportListener();
 
         responseTimeListeners.clear();
         if ( this.responseTimeListeners != null )
@@ -405,19 +404,30 @@ public class LoadGeneratorBuilder
             responseTimeListeners.addAll( this.responseTimeListeners );
         }
         responseTimeListeners.add( responseNumberPerPath );
-        responseTimeListeners.add( responseTimePerPath );
+        responseTimeListeners.add( timePerPathListener );
         responseTimeListeners.add( globalSummaryListener );
         responseTimeListeners.add( detailledTimeReportListener );
 
+
+        latencyTimeListeners.clear();
+        latencyTimeListeners.add( timePerPathListener );
+        latencyTimeListeners.add( globalSummaryListener );
+        latencyTimeListeners.add( detailledTimeReportListener );
+
+        LOGGER.info( "LoadGenerator parsing response result files" );
+
+        //-------------------------------------------------
+        // response time values
+        //-------------------------------------------------
+
+
         // get remote file
 
-        LOGGER.info( "LoadGenerator parsing response result file" );
+        Path responseTimeResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
 
-        Path localResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
+        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( responseTimeResultFile ) );
 
-        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( localResultFile ) );
-
-        CSVParser csvParser = new CSVParser( Files.newBufferedReader( localResultFile ), CSVFormat.newFormat( '|' ) );
+        CSVParser csvParser = new CSVParser( Files.newBufferedReader( responseTimeResultFile ), CSVFormat.newFormat( '|' ) );
 
         csvParser.forEach(
             strings ->
@@ -435,24 +445,46 @@ public class LoadGeneratorBuilder
                 }
             } );
 
+        //-------------------------------------------------
+        // latency time values
+        //-------------------------------------------------
+        parseLatencyValues(workspace, latencyTimeResultFilePath, latencyTimeListeners);
+
+
+
         // manage results
 
         SummaryReport summaryReport = new SummaryReport(run.getId());
 
-        Map<String, CollectorInformations> perPath = new HashMap<>( responseTimePerPath.getResponseTimePerPath().size() );
 
-        for ( Map.Entry<String, Recorder> entry : responseTimePerPath.getResponseTimePerPath().entrySet() )
+        for ( Map.Entry<String, Recorder> entry : timePerPathListener.getResponseTimePerPath().entrySet() )
         {
             String path = entry.getKey();
             Histogram histogram = entry.getValue().getIntervalHistogram();
-            perPath.put( entry.getKey(), new CollectorInformations( histogram ) );
+
             AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
             LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
                           path, //
                           TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                           number.get() );
-            summaryReport.addCollectorInformations( path, new CollectorInformations( histogram ) );
+            summaryReport.addResponseTimeInformations( path, new CollectorInformations( histogram ) );
         }
+
+
+
+        for ( Map.Entry<String, Recorder> entry : timePerPathListener.getLatencyTimePerPath().entrySet() )
+        {
+            String path = entry.getKey();
+            Histogram histogram = entry.getValue().getIntervalHistogram();
+
+            AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
+            LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
+                          path, //
+                          TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
+                          number.get() );
+            summaryReport.addLatencyTimeInformations( path, new CollectorInformations( histogram ) );
+        }
+
 
         // FIXME calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
@@ -476,18 +508,57 @@ public class LoadGeneratorBuilder
                                                      summaryReport, //
                                                      new CollectorInformations(
                                                          globalSummaryListener.getResponseTimeHistogram() ), //
-                                                     perPath, allResponseInfoTimePerPath, run ) );
+                                                     new CollectorInformations(
+                                                         globalSummaryListener.getLatencyTimeHistogram() ), //
+                                                     allResponseInfoTimePerPath, run ) );
 
         // cleanup
 
         getCurrentNode(launcher.getComputer()) //
             .getChannel() //
             .call( new LoadGeneratorProcessFactory.DeleteTmpFile( responseTimeResultFilePath.toString() ) );
-        Files.deleteIfExists( localResultFile );
+        Files.deleteIfExists( responseTimeResultFile );
+
 
         LOGGER.info( "LoadGenerator end" );
     }
 
+
+    protected void parseLatencyValues( FilePath workspace, Path latencyTimeResultFilePath, List<LatencyTimeListener> latencyTimeListeners )
+    throws Exception{
+
+        Path latencyTimeResultFile = Files.createTempFile( "loadgenerator_result_latency", ".csv" );
+
+        workspace.child( latencyTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( latencyTimeResultFile ) );
+
+        CSVParser csvParser = new CSVParser( Files.newBufferedReader( latencyTimeResultFile ), CSVFormat.newFormat( '|' ) );
+
+        csvParser.forEach(
+            strings ->
+            {
+                try
+                {
+                    ValueListener.Values values = new ValueListener.Values() //
+                        .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
+                        .method( strings.get( 1 ) ) //
+                        .path( strings.get( 2 ) ) //
+                        .time( Long.parseLong( strings.get( 3 ) ) ) //
+                        .status( Integer.parseInt( strings.get( 4 ) ) ) //
+                        .size( Long.parseLong( strings.get( 5 ) ) );
+                    for (LatencyTimeListener listener : latencyTimeListeners)
+                    {
+                        listener.onLatencyTimeValue( values );
+                    }
+                }
+                catch ( Exception e )
+                {
+                    e.printStackTrace();
+                }
+            } );
+
+
+        Files.deleteIfExists( latencyTimeResultFile );
+    }
 
     protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer, TaskListener taskListener, Run<?,?> run)
         throws Exception
