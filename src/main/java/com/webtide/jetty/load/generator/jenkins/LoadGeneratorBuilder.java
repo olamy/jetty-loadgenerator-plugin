@@ -124,6 +124,8 @@ public class LoadGeneratorBuilder
 
     private String generatorNumber = "1";
 
+    private String dryRun = "0";
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
@@ -260,6 +262,17 @@ public class LoadGeneratorBuilder
         this.generatorNumber = generatorNumber;
     }
 
+    public String getDryRun()
+    {
+        return dryRun;
+    }
+
+    @DataBoundSetter
+    public void setDryRun( String dryRun )
+    {
+        this.dryRun = dryRun;
+    }
+
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
@@ -381,7 +394,8 @@ public class LoadGeneratorBuilder
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
-                                                     responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs() );
+                                                     responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs(), //
+                                                     Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ));
 
 
 

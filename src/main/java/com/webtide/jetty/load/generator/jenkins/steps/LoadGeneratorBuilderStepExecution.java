@@ -66,6 +66,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs(), //
                                                                  Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ) );
         builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
+        builder.setDryRun( Integer.toString( loadGeneratorBuilderStep.getDryRun() ) );
 
         builder.doRun( taskListener, filePath, run, launcher );
 

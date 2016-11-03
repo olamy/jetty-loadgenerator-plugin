@@ -23,6 +23,7 @@ import hudson.model.JDK;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.remoting.Channel;
+import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
@@ -42,7 +43,7 @@ public class LoadGeneratorProcessRunner
     public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName, //
                             Node currentNode, List<?> responseTimeListeners,
                             List<LatencyTimeListener> latencyTimeListeners, //
-                            List<String> args, String jvmExtraArgs )
+                            List<String> args, String jvmExtraArgs, int dryRun )
         throws Exception
     {
         Channel channel = null;
@@ -55,6 +56,15 @@ public class LoadGeneratorProcessRunner
                 jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
             channel =
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
+
+            // first run as dry run if configured
+            if (dryRun > 0)
+            {
+                ArgumentListBuilder cmdLine = new ArgumentListBuilder(args.toArray( new String[args.size()] )) //
+                .add("-dr") //
+                .add( "-ri" ).add( dryRun );
+                channel.call( new LoadCaller( cmdLine.toList(), responseTimeListeners, latencyTimeListeners ) );
+            }
 
             channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
 

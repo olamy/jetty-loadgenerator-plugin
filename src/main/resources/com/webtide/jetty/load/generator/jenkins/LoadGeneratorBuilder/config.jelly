@@ -22,6 +22,10 @@
   <f:entry title="${%Running Time}" field="runningTime">
     <f:textbox />
   </f:entry>
+  <f:entry title="${%Dry Run Iteration Number}" field="dryRun">
+    <f:textbox />
+  </f:entry>
+
   <f:entry title="${%Transport}">
     <select class="setting-input" name="transport">
       <j:forEach var="s" items="${descriptor.transports}">
