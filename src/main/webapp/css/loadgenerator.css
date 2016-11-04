@@ -33,9 +33,9 @@
 }
 
 .floating-box-response-time::after{
-    content: 'Load Generator Response Time Trend';
+    content: 'Response Time Trend';
 }
 
 .floating-box-latency-time::after{
-    content: 'Load Generator Latency Time Trend';
+    content: 'Latency Time Trend';
 }

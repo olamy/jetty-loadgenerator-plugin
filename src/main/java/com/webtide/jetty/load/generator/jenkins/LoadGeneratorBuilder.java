@@ -465,7 +465,6 @@ public class LoadGeneratorBuilder
         parseLatencyValues(workspace, latencyTimeResultFilePath, latencyTimeListeners);
 
 
-
         // manage results
 
         SummaryReport summaryReport = new SummaryReport(run.getId());

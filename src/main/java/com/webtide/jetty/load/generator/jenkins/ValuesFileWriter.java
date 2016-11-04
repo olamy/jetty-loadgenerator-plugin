@@ -94,7 +94,7 @@ public class ValuesFileWriter
             ExecutorService executor = Executors.newCachedThreadPool();
 
             // Specify the size of the ring buffer, must be power of 2.
-            int bufferSize = 1024;
+            int bufferSize = Integer.getInteger( "loadgenerator.ringbuffer.size",  2048);
 
             // Construct the Disruptor
             Disruptor<Values> disruptor = new Disruptor<>( this, bufferSize, executor );
