@@ -94,7 +94,7 @@ public class ValuesFileWriter
             ExecutorService executor = Executors.newCachedThreadPool();
 
             // Specify the size of the ring buffer, must be power of 2.
-            int bufferSize = Integer.getInteger( "loadgenerator.ringbuffer.size",  2048);
+            int bufferSize = Integer.getInteger( "loadgenerator.ringbuffer.size", 2048 );
 
             // Construct the Disruptor
             Disruptor<Values> disruptor = new Disruptor<>( this, bufferSize, executor );
@@ -121,7 +121,7 @@ public class ValuesFileWriter
     {
         try
         {
-            StringBuilder sb = new StringBuilder( 64 ) //
+            StringBuilder sb = new StringBuilder( 128 ) //
                 .append( values.getEventTimestamp() ).append( '|' ) //
                 .append( values.getMethod() ).append( '|' ) //
                 .append( values.getPath() ).append( '|' ) //
@@ -135,6 +135,21 @@ public class ValuesFileWriter
         catch ( IOException e )
         {
             e.printStackTrace();
+        }
+    }
+
+
+    public void reset()
+    {
+        try
+        {
+            this.onLoadGeneratorStop();
+            this.bufferedWriter = Files.newBufferedWriter( Paths.get( this.filePath ) );
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+            throw new RuntimeException( e.getMessage(), e );
         }
     }
 

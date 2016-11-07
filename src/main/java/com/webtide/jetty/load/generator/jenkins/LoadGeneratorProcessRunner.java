@@ -27,6 +27,7 @@ import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
+import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -61,9 +62,20 @@ public class LoadGeneratorProcessRunner
             if (dryRun > 0)
             {
                 ArgumentListBuilder cmdLine = new ArgumentListBuilder(args.toArray( new String[args.size()] )) //
-                .add("-dr") //
-                .add( "-ri" ).add( dryRun );
+                .add( "-ri" ).add( dryRun ) //
+                .add( "-notint" );
                 channel.call( new LoadCaller( cmdLine.toList(), responseTimeListeners, latencyTimeListeners ) );
+                for ( Object listener : responseTimeListeners) {
+                    if (listener instanceof ValuesFileWriter) {
+                        ((ValuesFileWriter)listener).reset();
+                    }
+                }
+                for ( Object listener : latencyTimeListeners) {
+                    if (listener instanceof ValuesFileWriter) {
+                        ((ValuesFileWriter)listener).reset();
+                    }
+                }
+
             }
 
             channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );

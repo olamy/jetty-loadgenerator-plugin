@@ -33,9 +33,9 @@
 }
 
 .floating-box-response-time::after{
-    content: 'Response Time Trend';
+    content: 'Response Time Trend ms';
 }
 
 .floating-box-latency-time::after{
-    content: 'Latency Time Trend';
+    content: 'Latency Time Trend ms';
 }
