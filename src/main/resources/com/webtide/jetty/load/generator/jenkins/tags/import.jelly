@@ -6,7 +6,10 @@
 	        src="${rootURL}/plugin/loadgenerator/js/morris/morris-0.5.1.min.js"></script>
 	<script language="javascript" type="text/javascript"
 					src="${rootURL}/plugin/loadgenerator/js/morris/raphael-2.1.2.min.js"></script>
+	<script language="javascript" type="text/javascript"
+					src="${rootURL}/plugin/loadgenerator/js/select2/select2.min-4.0.3.js"></script>
 	<script type="text/javascript">window.jQueryLoadGenerator = jQuery.noConflict()</script>
 	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/morris.css"/>
 	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/loadgenerator.css"/>
+	<link rel="stylesheet" type="text/css" href="${rootURL}/plugin/loadgenerator/css/select2.css"/>
 </j:jelly>
