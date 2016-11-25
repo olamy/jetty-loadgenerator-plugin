@@ -112,7 +112,7 @@ public class LoadGeneratorProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, ( o1, o2 ) -> Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) ) );
+        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId ));
 
         StringWriter stringWriter = new StringWriter();
 

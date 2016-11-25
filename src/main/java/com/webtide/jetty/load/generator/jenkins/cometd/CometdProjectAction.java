@@ -33,6 +33,7 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +51,9 @@ public class CometdProjectAction
 
     private final transient RunList<?> builds;
 
-    private final transient Run<?,?> lastRun;
+    private final transient Run<?, ?> lastRun;
 
-    public CometdProjectAction( RunList<?> builds, Run<?,?> lastRun )
+    public CometdProjectAction( RunList<?> builds, Run<?, ?> lastRun )
     {
         this.builds = builds == null ? new RunList<>() : builds;
         this.lastRun = lastRun;
@@ -81,7 +82,7 @@ public class CometdProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, ( o1, o2 ) -> Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) ) );
+        Collections.sort( datas, Comparator.comparing( BuildLoadResults::getBuildId ));
 
         //StringWriter stringWriter = new StringWriter();
 
@@ -94,12 +95,10 @@ public class CometdProjectAction
     }
 
 
-
     public void doTitles( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
     {
         Map<String, String> titles = new HashMap<>();
-
 
         if ( lastRun != null )
         {
