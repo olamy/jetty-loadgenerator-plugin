@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -77,7 +78,7 @@ public class LoadGeneratorProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, ( o1, o2 ) -> Long.valueOf( o1.buildId ).compareTo( Long.valueOf( o2.buildId ) ) );
+        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId));
 
         StringWriter stringWriter = new StringWriter();
 

@@ -21,6 +21,7 @@ import com.webtide.jetty.load.generator.jenkins.cometd.beans.LoadResults;
 import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
+import hudson.model.Job;
 import hudson.model.Run;
 import hudson.util.RunList;
 import jenkins.model.RunAction2;
@@ -28,6 +29,7 @@ import jenkins.tasks.SimpleBuildStep;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  *
@@ -82,8 +84,12 @@ public class CometdResultBuildAction
     @Override
     public void onLoad( Run<?, ?> r )
     {
-        this.builds = r.getParent().getBuilds();
-        this.lastRun = r.getParent().getLastBuild();
+        Job parent = r.getParent();
+        if (parent != null)
+        {
+            this.builds = parent.getBuilds();
+            this.lastRun = parent.getLastBuild();
+        }
     }
 
     @Override
