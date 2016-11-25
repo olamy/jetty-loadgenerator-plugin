@@ -29,6 +29,7 @@ import jenkins.tasks.SimpleBuildStep;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 
 /**
@@ -47,8 +48,6 @@ public class CometdResultBuildAction
     private final String jobName;
 
     private transient RunList<?> builds;
-
-    private transient Run<?,?> lastRun;
 
     public CometdResultBuildAction( HealthReport healthReport, LoadResults loadResults, Run<?, ?> run )
     {
@@ -72,7 +71,8 @@ public class CometdResultBuildAction
     @Override
     public Collection<? extends Action> getProjectActions()
     {
-        return Arrays.asList( new CometdProjectAction( this.builds, this.lastRun ) );
+        return this.builds != null ? //
+            Arrays.asList( new CometdProjectAction( this.builds, this.builds.getLastBuild() ) ) : Collections.emptyList();
     }
 
     @Override
@@ -88,7 +88,6 @@ public class CometdResultBuildAction
         if (parent != null)
         {
             this.builds = parent.getBuilds();
-            this.lastRun = parent.getLastBuild();
         }
     }
 
