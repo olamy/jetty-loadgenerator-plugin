@@ -50,13 +50,14 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.eclipse.jetty.load.generator.LoadGenerator;
 import org.eclipse.jetty.load.generator.ValueListener;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 import org.eclipse.jetty.load.generator.profile.ResourceProfile;
-import org.eclipse.jetty.load.generator.report.DetailledTimeValuesReport;
 import org.eclipse.jetty.load.generator.report.DetailledTimeReportListener;
+import org.eclipse.jetty.load.generator.report.DetailledTimeValuesReport;
 import org.eclipse.jetty.load.generator.report.GlobalSummaryListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
@@ -392,10 +393,14 @@ public class LoadGeneratorBuilder
 
         List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, run );
 
+        String monitorUrl = getMonitorUrl( taskListener, run );
+
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs(), //
-                                                     Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ));
+                                                     StringUtils.isNotEmpty( getDryRun() ) ? //
+                                                         Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1, //
+                                                     monitorUrl );
 
 
 
@@ -433,36 +438,19 @@ public class LoadGeneratorBuilder
         //-------------------------------------------------
         // response time values
         //-------------------------------------------------
-
-
-        // get remote file
-
-        Path responseTimeResultFile = Files.createTempFile( "loadgenerator_result", ".csv" );
-
-        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( responseTimeResultFile ) );
-
-        CSVParser csvParser = new CSVParser( Files.newBufferedReader( responseTimeResultFile ), CSVFormat.newFormat( '|' ) );
-
-        csvParser.forEach(
-            strings ->
-            {
-                ValueListener.Values values = new ValueListener.Values() //
-                    .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
-                    .method( strings.get( 1 ) ) //
-                    .path( strings.get( 2 ) ) //
-                    .time( Long.parseLong( strings.get( 3 ) ) ) //
-                    .status( Integer.parseInt( strings.get( 4 ) ) ) //
-                    .size( Long.parseLong( strings.get( 5 ) ) );
-                for (ResponseTimeListener listener : responseTimeListeners)
-                {
-                    listener.onResponseTimeValue( values );
-                }
-            } );
+        parseResponseTimeValues(workspace, responseTimeResultFilePath, responseTimeListeners);
 
         //-------------------------------------------------
         // latency time values
         //-------------------------------------------------
         parseLatencyValues(workspace, latencyTimeResultFilePath, latencyTimeListeners);
+
+        //-------------------------------------------------
+        // Monitor values
+        //-------------------------------------------------
+        String monitorJson = getMonitorValues(monitorUrl);
+
+        LOGGER.info( "monitorJson: {}", monitorJson );
 
 
         // manage results
@@ -530,45 +518,76 @@ public class LoadGeneratorBuilder
         getCurrentNode(launcher.getComputer()) //
             .getChannel() //
             .call( new LoadGeneratorProcessFactory.DeleteTmpFile( responseTimeResultFilePath.toString() ) );
-        Files.deleteIfExists( responseTimeResultFile );
+
 
 
         LOGGER.info( "LoadGenerator end" );
     }
 
+    protected void parseResponseTimeValues( FilePath workspace, Path responseTimeResultFilePath,
+                                       List<ResponseTimeListener> responseTimeListeners )
+        throws Exception
+    {
+        Path responseTimeResultFile = Files.createTempFile( "loadgenerator_result_responsetime", ".csv" );
 
-    protected void parseLatencyValues( FilePath workspace, Path latencyTimeResultFilePath, List<LatencyTimeListener> latencyTimeListeners )
-    throws Exception{
+        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( responseTimeResultFile ) );
 
-        Path latencyTimeResultFile = Files.createTempFile( "loadgenerator_result_latency", ".csv" );
-
-        workspace.child( latencyTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( latencyTimeResultFile ) );
-
-        CSVParser csvParser = new CSVParser( Files.newBufferedReader( latencyTimeResultFile ), CSVFormat.newFormat( '|' ) );
+        CSVParser csvParser = new CSVParser( Files.newBufferedReader( responseTimeResultFile ), CSVFormat.newFormat( '|' ) );
 
         csvParser.forEach(
             strings ->
             {
-                try
+                ValueListener.Values values = new ValueListener.Values() //
+                    .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
+                    .method( strings.get( 1 ) ) //
+                    .path( strings.get( 2 ) ) //
+                    .time( Long.parseLong( strings.get( 3 ) ) ) //
+                    .status( Integer.parseInt( strings.get( 4 ) ) ) //
+                    .size( Long.parseLong( strings.get( 5 ) ) );
+                for (ResponseTimeListener listener : responseTimeListeners)
                 {
-                    ValueListener.Values values = new ValueListener.Values() //
-                        .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
-                        .method( strings.get( 1 ) ) //
-                        .path( strings.get( 2 ) ) //
-                        .time( Long.parseLong( strings.get( 3 ) ) ) //
-                        .status( Integer.parseInt( strings.get( 4 ) ) ) //
-                        .size( Long.parseLong( strings.get( 5 ) ) );
-                    for (LatencyTimeListener listener : latencyTimeListeners)
-                    {
-                        listener.onLatencyTimeValue( values );
-                    }
-                }
-                catch ( Exception e )
-                {
-                    e.printStackTrace();
+                    listener.onResponseTimeValue( values );
                 }
             } );
 
+        Files.deleteIfExists( responseTimeResultFile );
+    }
+
+
+    protected void parseLatencyValues( FilePath workspace, Path latencyTimeResultFilePath,
+                                       List<LatencyTimeListener> latencyTimeListeners )
+        throws Exception
+    {
+
+        Path latencyTimeResultFile = Files.createTempFile( "loadgenerator_result_latency", ".csv" );
+
+        workspace.child( latencyTimeResultFilePath.toString() ).copyTo(
+            Files.newOutputStream( latencyTimeResultFile ) );
+
+        CSVParser csvParser =
+            new CSVParser( Files.newBufferedReader( latencyTimeResultFile ), CSVFormat.newFormat( '|' ) );
+
+        csvParser.forEach( strings ->
+                           {
+                               try
+                               {
+                                   ValueListener.Values values = new ValueListener.Values() //
+                                       .eventTimestamp( Long.parseLong( strings.get( 0 ) ) ) //
+                                       .method( strings.get( 1 ) ) //
+                                       .path( strings.get( 2 ) ) //
+                                       .time( Long.parseLong( strings.get( 3 ) ) ) //
+                                       .status( Integer.parseInt( strings.get( 4 ) ) ) //
+                                       .size( Long.parseLong( strings.get( 5 ) ) );
+                                   for ( LatencyTimeListener listener : latencyTimeListeners )
+                                   {
+                                       listener.onLatencyTimeValue( values );
+                                   }
+                               }
+                               catch ( Exception e )
+                               {
+                                   e.printStackTrace();
+                               }
+                           } );
 
         Files.deleteIfExists( latencyTimeResultFile );
     }
@@ -620,6 +639,41 @@ public class LoadGeneratorBuilder
         LOGGER.debug( "finish" );
         return cmdLine.toList();
 
+    }
+
+    protected String getMonitorUrl( TaskListener taskListener, Run run )
+        throws Exception
+    {
+        String url = ( this.isSecureProtocol() ? "https" : "http" ) //
+            + "://" + expandTokens( taskListener, this.host, run );
+
+        if ( StringUtils.isNotEmpty( this.port ) )
+        {
+            url = url //
+                + ":" + expandTokens( taskListener, this.port, run ) //
+                + "/monitor";
+        }
+        return url;
+    }
+
+    protected String getMonitorValues( String monitorUrl )
+        throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        try
+        {
+            httpClient.start();
+            return httpClient.newRequest( monitorUrl + "?stats=true" ).send().getContentAsString();
+        }
+        catch ( Exception e )
+        {
+            e.printStackTrace();
+            return "";
+        }
+        finally
+        {
+            httpClient.stop();
+        }
     }
 
 

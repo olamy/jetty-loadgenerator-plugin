@@ -26,8 +26,9 @@ import hudson.remoting.Channel;
 import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
+import org.eclipse.jetty.util.SocketAddressResolver;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -44,7 +45,7 @@ public class LoadGeneratorProcessRunner
     public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName, //
                             Node currentNode, List<?> responseTimeListeners,
                             List<LatencyTimeListener> latencyTimeListeners, //
-                            List<String> args, String jvmExtraArgs, int dryRun )
+                            List<String> args, String jvmExtraArgs, int dryRun, String monitorUrl )
         throws Exception
     {
         Channel channel = null;
@@ -75,8 +76,11 @@ public class LoadGeneratorProcessRunner
                         ((ValuesFileWriter)listener).reset();
                     }
                 }
-
             }
+
+
+            String response = startMonitor(monitorUrl);
+            taskListener.getLogger().println( "start monitor call " + response );
 
             channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
 
@@ -95,6 +99,29 @@ public class LoadGeneratorProcessRunner
         }
 
     }
+
+    protected String startMonitor( String monitorUrl )
+        throws Exception
+    {
+        HttpClient httpClient = new HttpClient();
+        httpClient.setSocketAddressResolver( new SocketAddressResolver.Sync() );
+        try
+        {
+            httpClient.start();
+            String url = monitorUrl + "?start=true";
+            return httpClient.newRequest( url ).send().getContentAsString();
+        }
+        catch ( Exception e )
+        {
+            return "";
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+
+    }
+
 
     private static class LoadCaller
         extends MasterToSlaveCallable<Void, Exception>
