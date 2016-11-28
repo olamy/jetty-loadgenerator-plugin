@@ -39,3 +39,7 @@
 .floating-box-latency-time::after{
     content: 'Latency Time Trend ms';
 }
+
+.floating-box-response-status-family::after{
+    content: 'Response number per HTTP Status family';
+}

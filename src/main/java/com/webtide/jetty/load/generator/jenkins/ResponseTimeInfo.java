@@ -29,10 +29,13 @@ public class ResponseTimeInfo
     // in ms
     private long time;
 
-    public ResponseTimeInfo( long timeStamp, long time )
+    private int status;
+
+    public ResponseTimeInfo( long timeStamp, long time, int status )
     {
         this.timeStamp = timeStamp;
         this.time = time;
+        this.status = status;
     }
 
     public long getTimeStamp()
@@ -43,5 +46,10 @@ public class ResponseTimeInfo
     public long getTime()
     {
         return time;
+    }
+
+    public int getStatus()
+    {
+        return status;
     }
 }

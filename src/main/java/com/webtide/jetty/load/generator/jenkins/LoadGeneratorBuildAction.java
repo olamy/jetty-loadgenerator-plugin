@@ -36,8 +36,11 @@ import javax.servlet.ServletException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  *
@@ -58,6 +61,11 @@ public class LoadGeneratorBuildAction
 
     private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
 
+    /**
+     * key is the http status fam
+     */
+    private final Map<Integer, LongAdder> responseNumberPerStatusFamily = new TreeMap<>( );
+
     private String jobName;
 
     private String buildId;
@@ -77,6 +85,21 @@ public class LoadGeneratorBuildAction
         this.jobName = run.getParent().getName();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
         this.buildId = run.getId();
+
+        for (List<ResponseTimeInfo> responseTimeInfos : allResponseInfoTimePerPath.values() )
+        {
+            for (ResponseTimeInfo info : responseTimeInfos)
+            {
+                int statusFamily = info.getStatus() / 100;
+                LongAdder longAdder = responseNumberPerStatusFamily.get( statusFamily );
+                if (longAdder == null) {
+                    longAdder = new LongAdder();
+                    responseNumberPerStatusFamily.put( statusFamily, longAdder );
+                }
+                longAdder.add( 1 );
+            }
+        }
+
     }
 
     public SummaryReport getSummaryReport()
@@ -108,6 +131,11 @@ public class LoadGeneratorBuildAction
 
         objectMapper.writeValue( rsp.getWriter(), allResponseInfoTimePerPath.get( req.getParameter( "path" ) ) );
 
+    }
+
+    public Map<Integer, LongAdder> getResponseNumberPerStatusFamily()
+    {
+        return responseNumberPerStatusFamily;
     }
 
     @Override

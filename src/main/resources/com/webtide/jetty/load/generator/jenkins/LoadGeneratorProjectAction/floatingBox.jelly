@@ -6,30 +6,30 @@
   <m:import/>
 
   <div class="graph-container floating-box-latency-time" align="right" >
-    <div id="load_generator_latency_time_trend" class="graph" style="width: 85%;height: 170px">
-    </div>
-    <script type="text/javascript" language="javascript">
-      jQueryLoadGenerator.noConflict();
-      jQueryLoadGenerator.getJSON("loadgenerator/latencyTrend", function (json) {
-      var grah = Morris.Line({
-      element: 'load_generator_latency_time_trend',
-      data: json,
-      xkey: 'buildId',
-      ykeys: ['mean','maxValue','value90'],
-      labels: ['Mean', 'Max', '90 Percentile'],
-      resize: true,
-      pointSize: 1,
-      parseTime: false,
-      hideHover: 'auto',
-      dateFormat: function(x) {
-      return x;
-      },
-      xLabelFormat: function(x) {
-      return 'Build #' + x.src.buildId;
-      }
-      });
-      });
-    </script>
+      <div id="load_generator_latency_time_trend" class="graph" style="width: 85%;height: 170px">
+      </div>
+      <script type="text/javascript" language="javascript">
+        jQueryLoadGenerator.noConflict();
+        jQueryLoadGenerator.getJSON("loadgenerator/latencyTrend", function (json) {
+          var grah = Morris.Line({
+          element: 'load_generator_latency_time_trend',
+          data: json,
+          xkey: 'buildId',
+          ykeys: ['mean','maxValue','value90'],
+          labels: ['Mean', 'Max', '90 Percentile'],
+          resize: true,
+          pointSize: 1,
+          parseTime: false,
+          hideHover: 'auto',
+          dateFormat: function(x) {
+          return x;
+          },
+          xLabelFormat: function(x) {
+          return 'Build #' + x.src.buildId;
+          }
+          });
+        });
+      </script>
 
   </div>
 
@@ -57,6 +57,41 @@
                           }
             });
           });
+      </script>
+
+  </div>
+
+
+  <div class="graph-container floating-box-response-status-family" align="right" >
+      <div id="load_generator_response_status_trend" class="graph" style="width: 85%;height: 170px">
+      </div>
+      <script type="text/javascript" language="javascript">
+        jQueryLoadGenerator.noConflict();
+        jQueryLoadGenerator.getJSON("loadgenerator/perFamilyStatusNumber", function (json) {
+          // transform data
+          // {"32":{"2":22,"4":308},"33":{"2":22,"4":308}}
+
+
+          var grah = Morris.Line({
+            element: 'load_generator_response_status_trend',
+            data: json,
+            xkey: 'buildId',
+            ykeys: ['1xx','2xx','3xx','4xx','5xx'],
+            labels: ['1xx','2xx','3xx','4xx','5xx'],
+            resize: true,
+            pointSize: 1,
+            parseTime: false,
+            hideHover: 'auto',
+            dateFormat: function(x) {
+            return x;
+            },
+            xLabelFormat: function(x) {
+            return 'Build #' + x.src.buildId;
+            }
+          });
+
+
+        });
       </script>
 
   </div>

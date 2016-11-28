@@ -34,7 +34,11 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  *
@@ -154,6 +158,43 @@ public class LoadGeneratorProjectAction
         }
     }
 
+    public static class StatusResult {
+        private String buildId;
+
+        private long _1xx, _2xx, _3xx, _4xx, _5xx;
+
+
+        public String getBuildId()
+        {
+            return buildId;
+        }
+
+        public long get1xx()
+        {
+            return _1xx;
+        }
+
+        public long get2xx()
+        {
+            return _2xx;
+        }
+
+        public long get3xx()
+        {
+            return _3xx;
+        }
+
+        public long get4xx()
+        {
+            return _4xx;
+        }
+
+        public long get5xx()
+        {
+            return _5xx;
+        }
+    }
+
 
     public void doResponseTimeTrend( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
@@ -170,6 +211,61 @@ public class LoadGeneratorProjectAction
         String data = getAllLatencyInformations();
         rsp.getWriter().write( data );
     }
+
+    public void doPerFamilyStatusNumber( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
+    {
+        LOGGER.debug( "doPerFamilyStatusNumber" );
+
+        List<StatusResult> statusResults = new ArrayList<>(  );
+
+        for ( Run run : this.builds )
+        {
+            LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
+            if ( buildAction != null )
+            {
+                Map<Integer, LongAdder> re = buildAction.getResponseNumberPerStatusFamily();
+                if ( re != null )
+                {
+                    StatusResult statusResult = new StatusResult();
+                    statusResult.buildId = run.getId();
+                    if (re.get( 1 ) != null)
+                    {
+                        statusResult._1xx = re.get( 1 ).longValue();
+                    }
+                    if (re.get( 2 ) != null)
+                    {
+                        statusResult._2xx = re.get( 2 ).longValue();
+                    }
+                    if (re.get( 3 ) != null)
+                    {
+                        statusResult._3xx = re.get( 3 ).longValue();
+                    }
+                    if (re.get( 4 ) != null)
+                    {
+                        statusResult._4xx = re.get( 4 ).longValue();
+                    }
+                    if (re.get( 5 ) != null)
+                    {
+                        statusResult._5xx = re.get( 5 ).longValue();
+                    }
+                    statusResults.add( statusResult );
+                }
+            }
+        }
+
+        Collections.sort( statusResults, Comparator.comparing( StatusResult::getBuildId));
+
+
+        StringWriter stringWriter = new StringWriter(  );
+
+        new ObjectMapper().writeValue( stringWriter, statusResults );
+
+        rsp.getWriter().write( stringWriter.toString() );
+    }
+
+
+
 
     @Override
     public String getIconFileName()

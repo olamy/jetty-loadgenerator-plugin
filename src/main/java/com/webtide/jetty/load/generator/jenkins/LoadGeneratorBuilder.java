@@ -61,6 +61,7 @@ import org.eclipse.jetty.load.generator.report.DetailledTimeValuesReport;
 import org.eclipse.jetty.load.generator.report.GlobalSummaryListener;
 import org.eclipse.jetty.load.generator.report.SummaryReport;
 import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
+import org.eclipse.jetty.load.generator.responsetime.ResponsePerStatus;
 import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
 import org.eclipse.jetty.load.generator.responsetime.TimePerPathListener;
 import org.jenkinsci.Symbol;
@@ -376,16 +377,14 @@ public class LoadGeneratorBuilder
         // -------------------------
         List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
 
-        Path responseTimeResultFilePath = Paths.get( launcher //
-                                             .getChannel() //
+        Path responseTimeResultFilePath = Paths.get( launcher.getChannel() //
                                              .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
         responseTimeListeners.add( new ValuesFileWriter( responseTimeResultFilePath ) );
 
         List<LatencyTimeListener> latencyTimeListeners = new ArrayList<>();
 
-        Path latencyTimeResultFilePath = Paths.get( launcher //
-                                                         .getChannel() //
+        Path latencyTimeResultFilePath = Paths.get( launcher.getChannel() //
                                                          .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
         latencyTimeListeners.add( new ValuesFileWriter( latencyTimeResultFilePath ) );
@@ -415,6 +414,8 @@ public class LoadGeneratorBuilder
         // handle response time reports
         // -----------------------------
 
+        ResponsePerStatus responsePerStatus = new ResponsePerStatus();
+
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
         responseTimeListeners.clear();
@@ -426,6 +427,7 @@ public class LoadGeneratorBuilder
         responseTimeListeners.add( timePerPathListener );
         responseTimeListeners.add( globalSummaryListener );
         responseTimeListeners.add( detailledTimeReportListener );
+        responseTimeListeners.add( responsePerStatus );
 
 
         latencyTimeListeners.clear();
@@ -501,7 +503,8 @@ public class LoadGeneratorBuilder
                 allResponseInfoTimePerPath.put( entry.getPath(), responseTimeInfos );
             }
             responseTimeInfos.add( new ResponseTimeInfo( entry.getTimeStamp(), //
-                                                         TimeUnit.NANOSECONDS.toMillis( entry.getTime() ) ) );
+                                                         TimeUnit.NANOSECONDS.toMillis( entry.getTime() ), //
+                                                         entry.getHttpStatus() ) );
 
         }
 
