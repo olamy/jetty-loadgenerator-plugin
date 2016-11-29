@@ -389,19 +389,23 @@ public class LoadGeneratorBuilder
 
         latencyTimeListeners.add( new ValuesFileWriter( latencyTimeResultFilePath ) );
 
+        Path statsResultFilePath = Paths.get( launcher.getChannel() //
+                                                   .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
-        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, run );
+        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, //
+                                            run, statsResultFilePath.toString()  );
 
         String monitorUrl = getMonitorUrl( taskListener, run );
+
+        int dryRun = StringUtils.isNotEmpty( getDryRun() ) ? //
+            Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1;
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs(), //
-                                                     StringUtils.isNotEmpty( getDryRun() ) ? //
-                                                         Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1, //
-                                                     monitorUrl );
+                                                     dryRun, monitorUrl);
 
-
+        String stats = workspace.child( statsResultFilePath.toString() ).readToString();
 
 
         TimePerPathListener timePerPathListener = new TimePerPathListener( false );
@@ -556,7 +560,6 @@ public class LoadGeneratorBuilder
         Files.deleteIfExists( responseTimeResultFile );
     }
 
-
     protected void parseLatencyValues( FilePath workspace, Path latencyTimeResultFilePath,
                                        List<LatencyTimeListener> latencyTimeListeners )
         throws Exception
@@ -595,7 +598,8 @@ public class LoadGeneratorBuilder
         Files.deleteIfExists( latencyTimeResultFile );
     }
 
-    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer, TaskListener taskListener, Run<?,?> run)
+    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer,
+                                           TaskListener taskListener, Run<?,?> run, String statsResultFilePath)
         throws Exception
     {
 
@@ -609,6 +613,7 @@ public class LoadGeneratorBuilder
         cmdLine.add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) );
         cmdLine.add( "-u" ).add( expandTokens( taskListener, users, run ) );
         cmdLine.add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) );
+        cmdLine.add( "-stf" ).add( statsResultFilePath );
 
         if ( StringUtils.isNotBlank( runIteration ) )
         {

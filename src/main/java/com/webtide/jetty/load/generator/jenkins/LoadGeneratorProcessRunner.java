@@ -27,6 +27,7 @@ import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 import org.eclipse.jetty.util.SocketAddressResolver;
 
@@ -109,7 +110,8 @@ public class LoadGeneratorProcessRunner
         {
             httpClient.start();
             String url = monitorUrl + "?start=true";
-            return httpClient.newRequest( url ).send().getContentAsString();
+            ContentResponse contentResponse = httpClient.newRequest( url ).send();
+            return contentResponse.getContentAsString();
         }
         catch ( Exception e )
         {
