@@ -72,11 +72,16 @@ public class LoadGeneratorBuildAction
 
     private transient RunList<?> builds;
 
+    private Map<String, Object> monitoringResultMap;
+
+    private String xmlStats;
+
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
                                      CollectorInformations globalResponseTimeInformations,
                                      CollectorInformations globalLatencyTimeInformations,
                                      Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath,
-                                     Run<?,?> run )
+                                     Run<?,?> run,
+                                     Map<String, Object> monitoringResultMap, String xmlStats)
     {
         this.health = health;
         this.summaryReport = summaryReport;
@@ -85,7 +90,8 @@ public class LoadGeneratorBuildAction
         this.jobName = run.getParent().getName();
         this.allResponseInfoTimePerPath = allResponseInfoTimePerPath;
         this.buildId = run.getId();
-
+        this.monitoringResultMap = monitoringResultMap;
+        this.xmlStats = xmlStats;
         for (List<ResponseTimeInfo> responseTimeInfos : allResponseInfoTimePerPath.values() )
         {
             for (ResponseTimeInfo info : responseTimeInfos)

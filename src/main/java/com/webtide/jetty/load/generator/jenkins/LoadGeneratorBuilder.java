@@ -456,9 +456,18 @@ public class LoadGeneratorBuilder
         //-------------------------------------------------
         String monitorJson = getMonitorValues(monitorUrl);
 
-        LOGGER.info( "monitorJson: {}", monitorJson );
+        taskListener.getLogger().print( "monitorJson: " + monitorJson );
 
+        Map<String, Object> monitoringResultMap = null;
 
+        try
+        {
+            monitoringResultMap = new ObjectMapper().readValue( monitorJson, Map.class );
+        }
+        catch ( Exception e )
+        {
+            LOGGER.warn( "skip error parsing json monitoring result" );
+        }
         // manage results
 
         SummaryReport summaryReport = new SummaryReport(run.getId());
@@ -518,7 +527,7 @@ public class LoadGeneratorBuilder
                                                          globalSummaryListener.getResponseTimeHistogram() ), //
                                                      new CollectorInformations(
                                                          globalSummaryListener.getLatencyTimeHistogram() ), //
-                                                     allResponseInfoTimePerPath, run ) );
+                                                     allResponseInfoTimePerPath, run, monitoringResultMap, stats ) );
 
         // cleanup
 
