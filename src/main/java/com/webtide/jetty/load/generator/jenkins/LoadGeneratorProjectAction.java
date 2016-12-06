@@ -22,6 +22,7 @@ import hudson.model.Actionable;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
+import org.apache.commons.lang.ObjectUtils;
 import org.eclipse.jetty.load.generator.CollectorInformations;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -34,10 +35,8 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -82,7 +81,7 @@ public class LoadGeneratorProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId));
+        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId ) );
 
         StringWriter stringWriter = new StringWriter();
 
@@ -91,6 +90,7 @@ public class LoadGeneratorProjectAction
         return stringWriter.toString();
 
     }
+
 
     public String getAllLatencyInformations()
         throws IOException
@@ -116,7 +116,7 @@ public class LoadGeneratorProjectAction
 
         // order by buildId
 
-        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId ));
+        Collections.sort( datas, Comparator.comparing( RunInformations::getBuildId ) );
 
         StringWriter stringWriter = new StringWriter();
 
@@ -158,7 +158,8 @@ public class LoadGeneratorProjectAction
         }
     }
 
-    public static class StatusResult {
+    public static class StatusResult
+    {
         private String buildId;
 
         private long _1xx, _2xx, _3xx, _4xx, _5xx;
@@ -195,6 +196,48 @@ public class LoadGeneratorProjectAction
         }
     }
 
+    public static class GcUsage
+    {
+        // values ms or MiB
+        private String youngCount, youngTime, oldCount, oldTime, youngGarbage, oldGarbage;
+
+        private String buildId;
+
+        public String getYoungCount()
+        {
+            return youngCount == null ? "" : youngCount;
+        }
+
+        public String getYoungTime()
+        {
+            return youngTime == null ? "" : youngTime;
+        }
+
+        public String getOldCount()
+        {
+            return oldCount == null ? "" : oldCount;
+        }
+
+        public String getOldTime()
+        {
+            return oldTime == null ? "" : oldTime;
+        }
+
+        public String getYoungGarbage()
+        {
+            return youngGarbage == null ? "" : youngGarbage;
+        }
+
+        public String getOldGarbage()
+        {
+            return oldGarbage == null ? "" : oldGarbage;
+        }
+
+        public String getBuildId()
+        {
+            return buildId == null ? "" : buildId;
+        }
+    }
 
     public void doResponseTimeTrend( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
@@ -217,7 +260,7 @@ public class LoadGeneratorProjectAction
     {
         LOGGER.debug( "doPerFamilyStatusNumber" );
 
-        List<StatusResult> statusResults = new ArrayList<>(  );
+        List<StatusResult> statusResults = new ArrayList<>();
 
         for ( Run run : this.builds )
         {
@@ -229,23 +272,23 @@ public class LoadGeneratorProjectAction
                 {
                     StatusResult statusResult = new StatusResult();
                     statusResult.buildId = run.getId();
-                    if (re.get( 1 ) != null)
+                    if ( re.get( 1 ) != null )
                     {
                         statusResult._1xx = re.get( 1 ).longValue();
                     }
-                    if (re.get( 2 ) != null)
+                    if ( re.get( 2 ) != null )
                     {
                         statusResult._2xx = re.get( 2 ).longValue();
                     }
-                    if (re.get( 3 ) != null)
+                    if ( re.get( 3 ) != null )
                     {
                         statusResult._3xx = re.get( 3 ).longValue();
                     }
-                    if (re.get( 4 ) != null)
+                    if ( re.get( 4 ) != null )
                     {
                         statusResult._4xx = re.get( 4 ).longValue();
                     }
-                    if (re.get( 5 ) != null)
+                    if ( re.get( 5 ) != null )
                     {
                         statusResult._5xx = re.get( 5 ).longValue();
                     }
@@ -254,17 +297,79 @@ public class LoadGeneratorProjectAction
             }
         }
 
-        Collections.sort( statusResults, Comparator.comparing( StatusResult::getBuildId));
+        Collections.sort( statusResults, Comparator.comparing( StatusResult::getBuildId ) );
 
-
-        StringWriter stringWriter = new StringWriter(  );
+        StringWriter stringWriter = new StringWriter();
 
         new ObjectMapper().writeValue( stringWriter, statusResults );
 
         rsp.getWriter().write( stringWriter.toString() );
     }
 
+    public void doGcUsage( StaplerRequest req, StaplerResponse rsp )
+        throws IOException, ServletException
+    {
 
+        List<GcUsage> gcUsages = new ArrayList<>();
+
+        for ( Run run : this.builds )
+        {
+            LoadGeneratorBuildAction buildAction = run.getAction( LoadGeneratorBuildAction.class );
+            if ( buildAction != null )
+            {
+                Map<String, Object> monitoringResultMap = buildAction.getMonitoringResultMap();
+                if ( monitoringResultMap == null )
+                {
+                    continue;
+                }
+                GcUsage gcUsage = new GcUsage();
+                Map<String, Object> resultsMap = (Map) monitoringResultMap.get( "results" );
+
+                if ( resultsMap == null )
+                {
+                    continue;
+                }
+
+                Map<String, Object> gcResult = (Map) resultsMap.get( "gc" );
+
+                gcUsage.youngCount = ObjectUtils.toString( gcResult.get( "youngCount" ) );
+
+                Map<String, Object> youngTime = (Map) gcResult.get( "youngTime" );
+                if ( youngTime != null )
+                {
+                    gcUsage.youngTime = ObjectUtils.toString( youngTime.get( "value" ) );
+                }
+                gcUsage.oldCount = ObjectUtils.toString( gcResult.get( "oldCount" ) );
+                Map<String, Object> oldTime = (Map) gcResult.get( "oldTime" );
+                if ( oldTime != null )
+                {
+                    gcUsage.oldTime = ObjectUtils.toString( oldTime.get( "value" ) );
+                }
+
+                Map<String, Object> youngGarbage = (Map) gcResult.get( "youngGarbage" );
+                if ( youngGarbage != null )
+                {
+                    gcUsage.youngGarbage = ObjectUtils.toString( youngGarbage.get( "value" ) );
+                }
+
+                Map<String, Object> oldGarbage = (Map) gcResult.get( "oldGarbage" );
+                if ( oldGarbage != null )
+                {
+                    gcUsage.oldGarbage = ObjectUtils.toString( oldGarbage.get( "value" ) );
+                }
+
+                gcUsages.add( gcUsage );
+            }
+        }
+
+        Collections.sort( gcUsages, Comparator.comparing( GcUsage::getBuildId ) );
+
+        StringWriter stringWriter = new StringWriter();
+
+        new ObjectMapper().writeValue( stringWriter, gcUsages );
+
+        rsp.getWriter().write( stringWriter.toString() );
+    }
 
 
     @Override

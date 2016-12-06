@@ -62,15 +62,43 @@
   </div>
 
 
+  <div class="graph-container floating-box-gc-usage-family" align="right" >
+    <div id="load_generator_gc_usage_trend" class="graph" style="width: 85%;height: 170px">
+    </div>
+    <script type="text/javascript" language="javascript">
+      jQueryLoadGenerator.noConflict();
+      jQueryLoadGenerator.getJSON("loadgenerator/gcUsage", function (json) {
+
+      var grah = Morris.Line({
+      element: 'load_generator_gc_usage_trend',
+      data: json,
+      xkey: 'buildId',
+      ykeys: ['youngCount','oldCount'],
+      labels: ['young garbage count','old garbage count'],
+      resize: true,
+      pointSize: 1,
+      parseTime: false,
+      hideHover: 'auto',
+      dateFormat: function(x) {
+      return x;
+      },
+      xLabelFormat: function(x) {
+      return 'Build #' + x.src.buildId;
+      }
+      });
+
+
+      });
+    </script>
+
+  </div>
+
   <div class="graph-container floating-box-response-status-family" align="right" >
       <div id="load_generator_response_status_trend" class="graph" style="width: 85%;height: 170px">
       </div>
       <script type="text/javascript" language="javascript">
         jQueryLoadGenerator.noConflict();
         jQueryLoadGenerator.getJSON("loadgenerator/perFamilyStatusNumber", function (json) {
-          // transform data
-          // {"32":{"2":22,"4":308},"33":{"2":22,"4":308}}
-
 
           var grah = Morris.Line({
             element: 'load_generator_response_status_trend',

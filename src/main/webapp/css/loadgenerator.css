@@ -43,3 +43,7 @@
 .floating-box-response-status-family::after{
     content: 'Response number per HTTP Status family';
 }
+
+.floating-box-gc-usage-family::after{
+    content: 'Garbage Trend';
+}

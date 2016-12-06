@@ -72,8 +72,14 @@ public class LoadGeneratorBuildAction
 
     private transient RunList<?> builds;
 
+    /**
+     * json produced by MonitorServlet
+     */
     private Map<String, Object> monitoringResultMap;
 
+    /**
+     * xml produced by Jetty StatisticsServlet
+     */
     private String xmlStats;
 
     public LoadGeneratorBuildAction( HealthReport health, SummaryReport summaryReport,
@@ -106,6 +112,16 @@ public class LoadGeneratorBuildAction
             }
         }
 
+    }
+
+    public Map<String, Object> getMonitoringResultMap()
+    {
+        return monitoringResultMap;
+    }
+
+    public String getXmlStats()
+    {
+        return xmlStats;
     }
 
     public SummaryReport getSummaryReport()
@@ -149,6 +165,7 @@ public class LoadGeneratorBuildAction
     {
         return Arrays.asList( new LoadGeneratorProjectAction( this.builds ));
     }
+
 
     @Override
     public void onAttached( Run<?, ?> r )
