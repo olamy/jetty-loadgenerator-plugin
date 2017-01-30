@@ -21,9 +21,9 @@ import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
-import org.eclipse.jetty.load.generator.ValueListener;
-import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
+import org.webtide.jetty.load.generator.ValueListener;
+import org.webtide.jetty.load.generator.latency.LatencyTimeListener;
+import org.webtide.jetty.load.generator.responsetime.ResponseTimeListener;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

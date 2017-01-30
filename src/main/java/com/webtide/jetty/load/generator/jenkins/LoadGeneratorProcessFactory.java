@@ -39,7 +39,7 @@ import hudson.util.StreamCopyThread;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.taskdefs.Zip;
-import org.eclipse.jetty.load.generator.starter.JenkinsRemoteStarter;
+import org.webtide.jetty.load.generator.starter.JenkinsRemoteStarter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

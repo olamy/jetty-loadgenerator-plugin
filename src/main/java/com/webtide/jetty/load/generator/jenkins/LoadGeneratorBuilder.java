@@ -51,19 +51,19 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.load.generator.CollectorInformations;
-import org.eclipse.jetty.load.generator.LoadGenerator;
-import org.eclipse.jetty.load.generator.ValueListener;
-import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
-import org.eclipse.jetty.load.generator.profile.ResourceProfile;
-import org.eclipse.jetty.load.generator.report.DetailledTimeReportListener;
-import org.eclipse.jetty.load.generator.report.DetailledTimeValuesReport;
-import org.eclipse.jetty.load.generator.report.GlobalSummaryListener;
-import org.eclipse.jetty.load.generator.report.SummaryReport;
-import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
-import org.eclipse.jetty.load.generator.responsetime.ResponsePerStatus;
-import org.eclipse.jetty.load.generator.responsetime.ResponseTimeListener;
-import org.eclipse.jetty.load.generator.responsetime.TimePerPathListener;
+import org.webtide.jetty.load.generator.CollectorInformations;
+import org.webtide.jetty.load.generator.LoadGenerator;
+import org.webtide.jetty.load.generator.ValueListener;
+import org.webtide.jetty.load.generator.latency.LatencyTimeListener;
+import org.webtide.jetty.load.generator.profile.ResourceProfile;
+import org.webtide.jetty.load.generator.report.DetailledTimeReportListener;
+import org.webtide.jetty.load.generator.report.DetailledTimeValuesReport;
+import org.webtide.jetty.load.generator.report.GlobalSummaryListener;
+import org.webtide.jetty.load.generator.report.SummaryReport;
+import org.webtide.jetty.load.generator.responsetime.ResponseNumberPerPath;
+import org.webtide.jetty.load.generator.responsetime.ResponsePerStatus;
+import org.webtide.jetty.load.generator.responsetime.ResponseTimeListener;
+import org.webtide.jetty.load.generator.responsetime.TimePerPathListener;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -454,7 +454,7 @@ public class LoadGeneratorBuilder
         //-------------------------------------------------
         // Monitor values
         //-------------------------------------------------
-        String monitorJson = getMonitorValues(monitorUrl);
+        String monitorJson = getMonitorValues(monitorUrl, taskListener);
 
         taskListener.getLogger().print( "monitorJson: " + monitorJson );
 
@@ -673,7 +673,7 @@ public class LoadGeneratorBuilder
         return url;
     }
 
-    protected String getMonitorValues( String monitorUrl )
+    protected String getMonitorValues( String monitorUrl, TaskListener taskListener )
         throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -684,6 +684,7 @@ public class LoadGeneratorBuilder
         }
         catch ( Exception e )
         {
+            taskListener.getLogger().println( "error calling stats monitorUrl:" + monitorUrl + "," + e.getMessage());
             e.printStackTrace();
             return "";
         }

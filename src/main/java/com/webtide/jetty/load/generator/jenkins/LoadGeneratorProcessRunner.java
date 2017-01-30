@@ -28,8 +28,8 @@ import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.load.generator.latency.LatencyTimeListener;
 import org.eclipse.jetty.util.SocketAddressResolver;
+import org.webtide.jetty.load.generator.latency.LatencyTimeListener;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -80,7 +80,7 @@ public class LoadGeneratorProcessRunner
             }
 
 
-            String response = startMonitor(monitorUrl);
+            String response = startMonitor(monitorUrl, taskListener);
             taskListener.getLogger().println( "start monitor call " + response );
 
             channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
@@ -101,7 +101,7 @@ public class LoadGeneratorProcessRunner
 
     }
 
-    protected String startMonitor( String monitorUrl )
+    protected String startMonitor( String monitorUrl, TaskListener taskListener )
         throws Exception
     {
         HttpClient httpClient = new HttpClient();
@@ -115,6 +115,7 @@ public class LoadGeneratorProcessRunner
         }
         catch ( Exception e )
         {
+            taskListener.getLogger().println( "error calling start monitorUrl:" + monitorUrl + "," + e.getMessage());
             return "";
         }
         finally

@@ -1,4 +1,4 @@
-import org.eclipse.jetty.load.generator.profile.*
+import org.webtide.jetty.load.generator.profile.*
 node ('master') {
 
   def profile = new ResourceProfile(new Resource( "/jenkins",

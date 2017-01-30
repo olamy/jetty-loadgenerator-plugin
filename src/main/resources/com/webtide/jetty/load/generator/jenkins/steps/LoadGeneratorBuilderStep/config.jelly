@@ -22,6 +22,13 @@
   <f:entry title="${%Running Time}" field="runningTime">
     <f:textbox />
   </f:entry>
+  <f:entry title="${%Running Time Unit}">
+    <select class="setting-input" name="runningTimeUnit">
+      <j:forEach var="s" items="${descriptor.timeUnits}">
+        <f:option selected="${s==instance.runningTimeUnit}">${s}</f:option>
+      </j:forEach>
+    </select>
+  </f:entry>
   <f:entry title="${%Transport}">
     <select class="setting-input" name="transport">
       <j:forEach var="s" items="${descriptor.transports}">
@@ -31,13 +38,6 @@
   </f:entry>
   <f:entry title="${%Secured Protocol}">
     <f:checkbox name="secureProtocol" checked="${instance.secureProtocol}" default="false" />
-  </f:entry>
-  <f:entry title="${%Running Time Unit}">
-    <select class="setting-input" name="runningTimeUnit">
-      <j:forEach var="s" items="${descriptor.timeUnits}">
-        <f:option selected="${s==instance.runningTimeUnit}">${s}</f:option>
-      </j:forEach>
-    </select>
   </f:entry>
   <f:entry title="${%Running Iteration}" field="runIteration">
     <f:textbox />

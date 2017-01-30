@@ -24,19 +24,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
-import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.load.generator.LoadGenerator;
-import org.eclipse.jetty.load.generator.responsetime.ResponseNumberPerPath;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -60,6 +55,7 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.webtide.jetty.load.generator.LoadGenerator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -74,7 +70,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
