@@ -18,8 +18,8 @@
 package com.webtide.jetty.load.generator.jenkins.steps;
 
 import hudson.Extension;
-import org.webtide.jetty.load.generator.LoadGenerator;
-import org.webtide.jetty.load.generator.profile.ResourceProfile;
+import org.mortbay.jetty.load.generator.LoadGenerator;
+import org.mortbay.jetty.load.generator.profile.ResourceProfile;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.Whitelist;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;

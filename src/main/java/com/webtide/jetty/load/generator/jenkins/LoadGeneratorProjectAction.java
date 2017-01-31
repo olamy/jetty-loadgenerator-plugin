@@ -23,7 +23,7 @@ import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
 import org.apache.commons.lang.ObjectUtils;
-import org.webtide.jetty.load.generator.CollectorInformations;
+import org.mortbay.jetty.load.generator.CollectorInformations;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.slf4j.Logger;

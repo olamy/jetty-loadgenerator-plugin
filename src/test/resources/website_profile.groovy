@@ -15,8 +15,8 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-//import org.eclipse.jetty.load.generator.profile.Resource
-//import org.eclipse.jetty.load.generator.profile.ResourceProfile
+import org.mortbay.jetty.load.generator.profile.Resource
+import org.mortbay.jetty.load.generator.profile.ResourceProfile
 
 return new ResourceProfile(new Resource( "index.html",
                              new Resource( "/style.css",

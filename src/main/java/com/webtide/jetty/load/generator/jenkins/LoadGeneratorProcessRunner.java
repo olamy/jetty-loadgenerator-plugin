@@ -29,7 +29,7 @@ import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.webtide.jetty.load.generator.latency.LatencyTimeListener;
+import org.mortbay.jetty.load.generator.latency.LatencyTimeListener;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -150,7 +150,7 @@ public class LoadGeneratorProcessRunner
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
             Class jenkinsRemoteStarterClazz =
-                classLoader.loadClass( "org.eclipse.jetty.load.generator.starter.JenkinsRemoteStarter" );
+                classLoader.loadClass( "org.mortbay.jetty.load.generator.starter.JenkinsRemoteStarter" );
 
             Method setResponseTimeListeners =
                 jenkinsRemoteStarterClazz.getMethod( "setResponseTimeListeners", List.class );

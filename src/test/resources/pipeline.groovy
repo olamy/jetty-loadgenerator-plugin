@@ -1,4 +1,4 @@
-import org.webtide.jetty.load.generator.profile.*
+import org.mortbay.jetty.load.generator.profile.*
 node ('master') {
 
   def profile = new ResourceProfile(new Resource( "/jenkins",
@@ -18,7 +18,7 @@ node ('master') {
   )
   );
 
-  def transport = org.eclipse.jetty.load.generator.LoadGenerator.Transport.HTTP;
+  def transport = org.mortbay.jetty.load.generator.LoadGenerator.Transport.HTTP;
 
   def timeUnit = java.util.concurrent.TimeUnit.SECONDS;
 

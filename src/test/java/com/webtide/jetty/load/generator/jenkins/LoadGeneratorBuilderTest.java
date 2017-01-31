@@ -55,7 +55,7 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.webtide.jetty.load.generator.LoadGenerator;
+import org.mortbay.jetty.load.generator.LoadGenerator;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
