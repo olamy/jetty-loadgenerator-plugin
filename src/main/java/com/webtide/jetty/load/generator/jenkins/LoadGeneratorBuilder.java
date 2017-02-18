@@ -616,13 +616,14 @@ public class LoadGeneratorBuilder
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
-        cmdLine.add( "-pjp" ).add( tmpFilePath );
-        cmdLine.add( "-h" ).add( expandTokens( taskListener, host, run ) );
-        cmdLine.add( "-p" ).add( expandTokens( taskListener, port, run ) );
-        cmdLine.add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) );
-        cmdLine.add( "-u" ).add( expandTokens( taskListener, users, run ) );
-        cmdLine.add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) );
-        cmdLine.add( "-stf" ).add( statsResultFilePath );
+        cmdLine.add( "-pjp" ).add( tmpFilePath ) //
+            .add( "-h" ).add( expandTokens( taskListener, host, run ) ) //
+            .add( "-p" ).add( expandTokens( taskListener, port, run ) ) //
+            .add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) ) //
+            .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
+            .add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
+            .add( "-stf" ).add( statsResultFilePath ) //
+            .add( "-css" );
 
         if ( StringUtils.isNotBlank( runIteration ) )
         {

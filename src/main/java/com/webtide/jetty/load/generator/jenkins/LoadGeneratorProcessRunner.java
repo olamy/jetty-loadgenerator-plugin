@@ -61,26 +61,29 @@ public class LoadGeneratorProcessRunner
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
 
             // first run as dry run if configured
-            if (dryRun > 0)
+            if ( dryRun > 0 )
             {
-                ArgumentListBuilder cmdLine = new ArgumentListBuilder(args.toArray( new String[args.size()] )) //
-                .add( "-ri" ).add( dryRun ) //
-                .add( "-notint" );
+                ArgumentListBuilder cmdLine = new ArgumentListBuilder( args.toArray( new String[args.size()] ) ) //
+                    .add( "-ri" ).add( dryRun ) //
+                    .add( "-notint" );
                 channel.call( new LoadCaller( cmdLine.toList(), responseTimeListeners, latencyTimeListeners ) );
-                for ( Object listener : responseTimeListeners) {
-                    if (listener instanceof ValuesFileWriter) {
-                        ((ValuesFileWriter)listener).reset();
+                for ( Object listener : responseTimeListeners )
+                {
+                    if ( listener instanceof ValuesFileWriter )
+                    {
+                        ( (ValuesFileWriter) listener ).reset();
                     }
                 }
-                for ( Object listener : latencyTimeListeners) {
-                    if (listener instanceof ValuesFileWriter) {
-                        ((ValuesFileWriter)listener).reset();
+                for ( Object listener : latencyTimeListeners )
+                {
+                    if ( listener instanceof ValuesFileWriter )
+                    {
+                        ( (ValuesFileWriter) listener ).reset();
                     }
                 }
             }
 
-
-            String response = startMonitor(monitorUrl, taskListener);
+            String response = startMonitor( monitorUrl, taskListener );
             taskListener.getLogger().println( "start monitor call " + response );
 
             channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
@@ -115,7 +118,7 @@ public class LoadGeneratorProcessRunner
         }
         catch ( Exception e )
         {
-            taskListener.getLogger().println( "error calling start monitorUrl:" + monitorUrl + "," + e.getMessage());
+            taskListener.getLogger().println( "error calling start monitorUrl:" + monitorUrl + "," + e.getMessage() );
             return "";
         }
         finally
