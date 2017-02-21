@@ -52,15 +52,15 @@ public class LoadGeneratorBuilderStepExecution
     protected Void run()
         throws Exception
     {
-        LoadGeneratorBuilder builder = new LoadGeneratorBuilder( loadGeneratorBuilderStep.getResourceProfile(), //
+        LoadGeneratorBuilder builder = new LoadGeneratorBuilder( loadGeneratorBuilderStep.getResource(), //
                                                                  loadGeneratorBuilderStep.getHost(), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getPort() ), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getUsers() ), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getPort() ),//
+                                                                 Integer.toString( loadGeneratorBuilderStep.getUsers() ),//
                                                                  loadGeneratorBuilderStep.getProfileFromFile(), //
                                                                  loadGeneratorBuilderStep.getRunningTime(), //
                                                                  loadGeneratorBuilderStep.getRunningTimeUnit(), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getRunIteration() ), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getTransactionRate() ), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getRunIteration() ),//
+                                                                 Integer.toString( loadGeneratorBuilderStep.getTransactionRate() ),//
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs(), //

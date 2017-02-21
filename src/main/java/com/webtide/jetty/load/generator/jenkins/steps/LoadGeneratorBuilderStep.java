@@ -19,7 +19,7 @@ package com.webtide.jetty.load.generator.jenkins.steps;
 
 import hudson.Extension;
 import org.mortbay.jetty.load.generator.LoadGenerator;
-import org.mortbay.jetty.load.generator.profile.ResourceProfile;
+import org.mortbay.jetty.load.generator.profile.Resource;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.Whitelist;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
@@ -44,7 +44,7 @@ public class LoadGeneratorBuilderStep
     extends AbstractStepImpl
 {
 
-    private ResourceProfile resourceProfile;
+    private Resource resource;
 
     private String host;
 
@@ -75,12 +75,12 @@ public class LoadGeneratorBuilderStep
     private int dryRun = 0;
 
     @DataBoundConstructor
-    public LoadGeneratorBuilderStep( ResourceProfile resourceProfile, String host, int port, int users,
+    public LoadGeneratorBuilderStep( Resource resourceProfile, String host, int port, int users,
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
                                      int runIteration, int transactionRate, LoadGenerator.Transport transport,
                                      boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int dryRun )
     {
-        this.resourceProfile = resourceProfile;
+        this.resource = resourceProfile;
         this.host = host;
         this.port = port;
         this.users = users;
@@ -96,9 +96,9 @@ public class LoadGeneratorBuilderStep
         this.dryRun = dryRun;
     }
 
-    public ResourceProfile getResourceProfile()
+    public Resource getResource()
     {
-        return resourceProfile;
+        return resource;
     }
 
     public String getHost()

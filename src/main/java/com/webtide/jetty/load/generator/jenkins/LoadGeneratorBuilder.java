@@ -55,7 +55,7 @@ import org.mortbay.jetty.load.generator.CollectorInformations;
 import org.mortbay.jetty.load.generator.LoadGenerator;
 import org.mortbay.jetty.load.generator.ValueListener;
 import org.mortbay.jetty.load.generator.latency.LatencyTimeListener;
-import org.mortbay.jetty.load.generator.profile.ResourceProfile;
+import org.mortbay.jetty.load.generator.profile.Resource;
 import org.mortbay.jetty.load.generator.report.DetailledTimeReportListener;
 import org.mortbay.jetty.load.generator.report.DetailledTimeValuesReport;
 import org.mortbay.jetty.load.generator.report.GlobalSummaryListener;
@@ -114,7 +114,7 @@ public class LoadGeneratorBuilder
 
     private List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
 
-    private ResourceProfile loadProfile;
+    private Resource loadResource;
 
     private LoadGenerator.Transport transport;
 
@@ -147,7 +147,7 @@ public class LoadGeneratorBuilder
         this.secureProtocol = secureProtocol;
     }
 
-    public LoadGeneratorBuilder( ResourceProfile resourceProfile, String host, String port, String users,
+    public LoadGeneratorBuilder( Resource resource, String host, String port, String users,
                                  String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
                                  String transactionRate, LoadGenerator.Transport transport, boolean secureProtocol, String jvmExtraArgs,
                                  String generatorNumber)
@@ -155,7 +155,7 @@ public class LoadGeneratorBuilder
 
         this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, transactionRate,
               transport, secureProtocol );
-        this.loadProfile = resourceProfile;
+        this.loadResource = resource;
         this.jvmExtraArgs = jvmExtraArgs;
         this.generatorNumber = generatorNumber;
     }
@@ -210,14 +210,14 @@ public class LoadGeneratorBuilder
         return transactionRate;
     }
 
-    public ResourceProfile getLoadProfile()
+    public Resource getLoadResource()
     {
-        return loadProfile;
+        return loadResource;
     }
 
-    public void setLoadProfile( ResourceProfile loadProfile )
+    public void setLoadResource( Resource loadResource )
     {
-        this.loadProfile = loadProfile;
+        this.loadResource = loadResource;
     }
 
     public LoadGenerator.Transport getTransport()
@@ -312,10 +312,10 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-        ResourceProfile resourceProfile =
-            this.loadProfile == null ? loadResourceProfile( workspace ) : this.loadProfile;
+        Resource resource =
+            this.loadResource == null ? loadResource( workspace ) : this.loadResource;
 
-        if ( resourceProfile == null )
+        if ( resource == null )
         {
             taskListener.getLogger().println( "resource profile must be set, Build ABORTED" );
             LOGGER.error( "resource profile must be set, Build ABORTED" );
@@ -323,7 +323,7 @@ public class LoadGeneratorBuilder
             return;
         }
 
-        runProcess( taskListener, workspace, run, launcher, resourceProfile );
+        runProcess( taskListener, workspace, run, launcher, resource );
 
     }
 
@@ -367,7 +367,7 @@ public class LoadGeneratorBuilder
 
 
     protected void runProcess( TaskListener taskListener, FilePath workspace, Run<?, ?> run, Launcher launcher,
-                               ResourceProfile resourceProfile )
+                               Resource resource )
         throws Exception
     {
 
@@ -392,7 +392,7 @@ public class LoadGeneratorBuilder
         Path statsResultFilePath = Paths.get( launcher.getChannel() //
                                                    .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
-        List<String> args = getArgsProcess( resourceProfile, launcher.getComputer(), taskListener, //
+        List<String> args = getArgsProcess( resource, launcher.getComputer(), taskListener, //
                                             run, statsResultFilePath.toString()  );
 
         String monitorUrl = getMonitorUrl( taskListener, run );
@@ -607,12 +607,12 @@ public class LoadGeneratorBuilder
         Files.deleteIfExists( latencyTimeResultFile );
     }
 
-    protected List<String> getArgsProcess( ResourceProfile resourceProfile, Computer computer,
+    protected List<String> getArgsProcess( Resource resource, Computer computer,
                                            TaskListener taskListener, Run<?,?> run, String statsResultFilePath)
         throws Exception
     {
 
-        final String tmpFilePath = getCurrentNode(computer).getChannel().call( new CopyResourceProfile( resourceProfile ) );
+        final String tmpFilePath = getCurrentNode(computer).getChannel().call( new CopyResource( resource ) );
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
@@ -696,14 +696,14 @@ public class LoadGeneratorBuilder
     }
 
 
-    static class CopyResourceProfile
+    static class CopyResource
         extends MasterToSlaveCallable<String, IOException>
     {
-        private ResourceProfile resourceProfile;
+        private Resource resource;
 
-        public CopyResourceProfile( ResourceProfile resourceProfile )
+        public CopyResource( Resource resource )
         {
-            this.resourceProfile = resourceProfile;
+            this.resource = resource;
         }
 
         @Override
@@ -712,17 +712,17 @@ public class LoadGeneratorBuilder
         {
             ObjectMapper objectMapper = new ObjectMapper();
             Path tmpPath = Files.createTempFile( "profile", ".tmp" );
-            objectMapper.writeValue( tmpPath.toFile(), resourceProfile );
+            objectMapper.writeValue( tmpPath.toFile(), resource );
             return tmpPath.toString();
         }
     }
 
 
-    protected ResourceProfile loadResourceProfile( FilePath workspace )
+    protected Resource loadResource( FilePath workspace )
         throws Exception
     {
 
-        ResourceProfile resourceProfile = null;
+        Resource resource = null;
 
         String groovy = StringUtils.trim( this.getProfileGroovy() );
 
@@ -743,14 +743,14 @@ public class LoadGeneratorBuilder
             compilerConfiguration.addCompilationCustomizers(
                 new ImportCustomizer().addStarImports( "org.eclipse.jetty.load.generator.profile" ) );
 
-            GroovyShell interpreter = new GroovyShell( ResourceProfile.class.getClassLoader(), //
+            GroovyShell interpreter = new GroovyShell( Resource.class.getClassLoader(), //
                                                        new Binding(), //
                                                        compilerConfiguration );
 
-            resourceProfile = (ResourceProfile) interpreter.evaluate( groovy );
+            resource = (Resource) interpreter.evaluate( groovy );
         }
 
-        return resourceProfile;
+        return resource;
     }
 
 

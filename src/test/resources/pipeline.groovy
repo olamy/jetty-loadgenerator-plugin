@@ -1,7 +1,7 @@
 import org.mortbay.jetty.load.generator.profile.*
 node ('master') {
 
-  def profile = new ResourceProfile(new Resource( "/jenkins",
+  def profile = new Resource(new Resource( "/jenkins",
                                                   new Resource( "/jenkins/job/pipeline-test/",
                                                                 new Resource( "/logo.gif" ),
                                                                 new Resource( "/spacer.png" )

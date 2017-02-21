@@ -1,3 +1,3 @@
 new org.mortbay.jetty.load.generator.profile.Resource java.lang.String
 new org.mortbay.jetty.load.generator.profile.Resource java.lang.String org.mortbay.jetty.load.generator.profile.Resource[]
-new org.mortbay.jetty.load.generator.profile.ResourceProfile org.mortbay.jetty.load.generator.profile.Resource[]
+new org.mortbay.jetty.load.generator.profile.Resource org.mortbay.jetty.load.generator.profile.Resource[]
