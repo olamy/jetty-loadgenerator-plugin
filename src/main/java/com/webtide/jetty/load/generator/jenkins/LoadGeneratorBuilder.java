@@ -524,9 +524,9 @@ public class LoadGeneratorBuilder
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getResponseTimeHistogram() ), //
+                                                         globalSummaryListener.getResponseTimeHistogram().getIntervalHistogram() ), //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getLatencyTimeHistogram() ), //
+                                                         globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram() ), //
                                                      allResponseInfoTimePerPath, run, monitoringResultMap, stats ) );
 
         // cleanup
