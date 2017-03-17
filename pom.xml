@@ -25,7 +25,7 @@
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <jackson2-version>2.8.1</jackson2-version>
     <jetty-93-version>9.3.16.v20170120</jetty-93-version>
-    <jetty.version>${jetty-93-version}</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
+    <jetty.version>9.3.17-SNAPSHOT</jetty.version> <!-- 9.3.12-SNAPSHOT ${jetty-93-version} -->
     <loadgenerator.debugPort>-1</loadgenerator.debugPort>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
@@ -53,12 +53,12 @@
     <dependency>
       <groupId>org.mortbay.jetty.loadgenerator</groupId>
       <artifactId>jetty-load-generator-client</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty.loadgenerator</groupId>
       <artifactId>jetty-load-generator-starter</artifactId>
-      <version>0.3-SNAPSHOT</version>
+      <version>1.0.0-SNAPSHOT</version>
       <classifier>uber</classifier>
     </dependency>
     <dependency>

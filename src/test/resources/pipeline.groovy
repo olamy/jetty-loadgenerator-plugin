@@ -1,7 +1,9 @@
-import org.mortbay.jetty.load.generator.profile.*
+import org.mortbay.jetty.load.generator.*
+import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs
+
 node ('master') {
 
-  def profile = new Resource(new Resource( "/jenkins",
+  def profile = new Resource( "/jenkins",
                                                   new Resource( "/jenkins/job/pipeline-test/",
                                                                 new Resource( "/logo.gif" ),
                                                                 new Resource( "/spacer.png" )
@@ -15,10 +17,9 @@ node ('master') {
                                                   new Resource( "/iframeContents.html" ),
                                                   new Resource( "/moreIframeContents.html" ),
                                                   new Resource( "/favicon.ico" )
-  )
   );
 
-  def transport = org.mortbay.jetty.load.generator.LoadGenerator.Transport.HTTP;
+  def transport = LoadGeneratorStarterArgs.Transport.HTTP;
 
   def timeUnit = java.util.concurrent.TimeUnit.SECONDS;
 

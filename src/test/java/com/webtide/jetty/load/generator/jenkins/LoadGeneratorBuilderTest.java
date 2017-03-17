@@ -37,8 +37,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.session.HashSessionIdManager;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.StatisticsServlet;
@@ -53,6 +51,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.mortbay.jetty.load.generator.LoadGenerator;
@@ -70,6 +69,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -87,6 +87,8 @@ public class LoadGeneratorBuilderTest
 
     StatisticsHandler statisticsHandler = new StatisticsHandler();
 
+    TestHandler testHandler = new TestHandler();
+
     @Before
     public void startJetty()
         throws Exception
@@ -94,7 +96,6 @@ public class LoadGeneratorBuilderTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName( "server" );
         server = new Server( serverThreads );
-        server.setSessionIdManager( new HashSessionIdManager() );
         connector = new ServerConnector( server, new HttpConnectionFactory( new HttpConfiguration() ) );
         server.addConnector( connector );
 
@@ -104,9 +105,7 @@ public class LoadGeneratorBuilderTest
 
         statsContext.addServlet( new ServletHolder( new StatisticsServlet() ), "/stats" );
 
-        statsContext.addServlet( new ServletHolder( new TestHandler() ), "/" );
-
-        statsContext.setSessionHandler( new SessionHandler() );
+        statsContext.addServlet( new ServletHolder( testHandler ), "/" );
 
         server.start();
     }
@@ -132,16 +131,14 @@ public class LoadGeneratorBuilderTest
                                       TimeUnit.SECONDS, //
                                       Integer.toString(iteration), //
                                       "1", //
-                                      LoadGenerator.Transport.HTTP, //
+                                      LoadGeneratorStarterArgs.Transport.HTTP, //
                                       false );
-
+        //loadGeneratorBuilder.setJvmExtraArgs( "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000" );
 
         project.getBuildersList().add( loadGeneratorBuilder );
-
         Run run = j.assertBuildStatusSuccess( project.scheduleBuild2( 0 ).get() );
-
+        LOGGER.info( "request received: {}", testHandler.requestCounter.get());
         doAssert( run, iteration );
-
     }
 
 
@@ -160,7 +157,6 @@ public class LoadGeneratorBuilderTest
         values.put( "iteration", Integer.toString( iteration ) );
 
         String script = StrSubstitutor.replace( IOUtils.toString( inputStream ), values );
-
 
         project.setDefinition(new CpsFlowDefinition( script ));
 
@@ -191,15 +187,14 @@ public class LoadGeneratorBuilderTest
         extends HttpServlet
     {
 
+        protected AtomicInteger requestCounter = new AtomicInteger( 0 );
+
         @Override
         protected void service( HttpServletRequest request, HttpServletResponse response )
             throws ServletException, IOException
         {
-
+            requestCounter.incrementAndGet();
             String method = request.getMethod().toUpperCase( Locale.ENGLISH );
-
-            HttpSession httpSession = request.getSession();
-
             switch ( method )
             {
                 case "GET":

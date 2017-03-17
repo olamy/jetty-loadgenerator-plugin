@@ -21,9 +21,8 @@ import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
-import org.mortbay.jetty.load.generator.ValueListener;
-import org.mortbay.jetty.load.generator.latency.LatencyTimeListener;
-import org.mortbay.jetty.load.generator.responsetime.ResponseTimeListener;
+import org.mortbay.jetty.load.generator.LoadGenerator;
+import org.mortbay.jetty.load.generator.Resource;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -38,8 +37,8 @@ import java.util.concurrent.Executors;
  *
  */
 public class ValuesFileWriter
-    implements ResponseTimeListener, Serializable, EventHandler<ValueListener.Values>,
-    EventFactory<ValueListener.Values>, LatencyTimeListener
+    implements Resource.NodeListener, Serializable, EventHandler<Values>, EventFactory<Values>,
+    LoadGenerator.EndListener
 {
 
     private final String filePath;
@@ -64,24 +63,26 @@ public class ValuesFileWriter
 
     protected void onValues( Values values )
     {
-        this.ringBuffer.publishEvent( ( event, sequence ) -> event.eventTimestamp( values.getEventTimestamp() ) //
-            .method( values.getMethod() ) //
-            .path( values.getPath() ) //
-            .time( values.getTime() ) //
-            .status( values.getStatus() ) //
-            .size( values.getSize() ) );
+        this.ringBuffer.publishEvent( ( event, sequence ) -> //
+                event.eventTimestamp( values.getEventTimestamp() ) //
+                    .method( values.getMethod() ) //
+                    .path( values.getPath() ) //
+                    .responseTime( values.getResponseTime() ) //
+                    .status( values.getStatus() ) //
+                    .latencyTime( values.getLatencyTime() ) //
+                    .size( values.getSize() ) );
     }
 
     @Override
-    public void onLatencyTimeValue( Values values )
+    public void onResourceNode( Resource.Info info )
     {
-        onValues( values );
-    }
-
-    @Override
-    public void onResponseTimeValue( Values values )
-    {
-        onValues( values );
+        onValues( new Values() //
+                      .eventTimestamp( info.getRequestTime() ) //
+                      .method( info.getResource().getMethod() ) //
+                      .path( info.getResource().getPath() ) //
+                      .status( info.getStatus() ) //
+                      .latencyTime( info.getLatencyTime() ) //
+                      .responseTime( info.getResponseTime() ) );
     }
 
     public Object readResolve()
@@ -125,9 +126,10 @@ public class ValuesFileWriter
                 .append( values.getEventTimestamp() ).append( '|' ) //
                 .append( values.getMethod() ).append( '|' ) //
                 .append( values.getPath() ).append( '|' ) //
-                .append( values.getTime() ).append( '|' ) //
                 .append( values.getStatus() ).append( '|' ) //
-                .append( values.getSize() );
+                .append( values.getSize() ).append( '|' ) //
+                .append( values.getResponseTime() ).append( '|' ) //
+                .append( values.getLatencyTime() );
 
             this.bufferedWriter.write( sb.toString() );
             this.bufferedWriter.newLine();
@@ -143,7 +145,7 @@ public class ValuesFileWriter
     {
         try
         {
-            this.onLoadGeneratorStop();
+            this.onEnd( null );
             this.bufferedWriter = Files.newBufferedWriter( Paths.get( this.filePath ) );
         }
         catch ( IOException e )
@@ -161,7 +163,7 @@ public class ValuesFileWriter
 
 
     @Override
-    public void onLoadGeneratorStop()
+    public void onEnd( LoadGenerator generator )
     {
         try
         {

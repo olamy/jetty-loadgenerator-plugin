@@ -18,8 +18,7 @@
 package com.webtide.jetty.load.generator.jenkins.steps;
 
 import hudson.Extension;
-import org.mortbay.jetty.load.generator.LoadGenerator;
-import org.mortbay.jetty.load.generator.profile.Resource;
+import org.mortbay.jetty.load.generator.Resource;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.Whitelist;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.StaticWhitelist;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepDescriptorImpl;
@@ -27,6 +26,7 @@ import org.jenkinsci.plugins.workflow.steps.AbstractStepImpl;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -62,7 +62,7 @@ public class LoadGeneratorBuilderStep
 
     private int transactionRate;
 
-    private LoadGenerator.Transport transport;
+    private LoadGeneratorStarterArgs.Transport transport;
 
     private boolean secureProtocol;
 
@@ -77,7 +77,7 @@ public class LoadGeneratorBuilderStep
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( Resource resourceProfile, String host, int port, int users,
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
-                                     int runIteration, int transactionRate, LoadGenerator.Transport transport,
+                                     int runIteration, int transactionRate, LoadGeneratorStarterArgs.Transport transport,
                                      boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int dryRun )
     {
         this.resource = resourceProfile;
@@ -141,7 +141,7 @@ public class LoadGeneratorBuilderStep
         return transactionRate;
     }
 
-    public LoadGenerator.Transport getTransport()
+    public LoadGeneratorStarterArgs.Transport getTransport()
     {
         return transport;
     }
@@ -264,7 +264,7 @@ public class LoadGeneratorBuilderStep
         @Override
         public boolean permitsStaticFieldGet( @Nonnull Field field )
         {
-            if ( field.getType().equals( LoadGenerator.Transport.class ) || field.getType().equals( TimeUnit.class ) )
+            if ( field.getType().equals( LoadGeneratorStarterArgs.Transport.class ) || field.getType().equals( TimeUnit.class ) )
             {
                 return true;
             }

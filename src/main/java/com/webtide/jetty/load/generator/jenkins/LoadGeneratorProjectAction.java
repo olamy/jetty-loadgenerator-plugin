@@ -18,14 +18,15 @@
 package com.webtide.jetty.load.generator.jenkins;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import hudson.model.Actionable;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
 import org.apache.commons.lang.ObjectUtils;
-import org.mortbay.jetty.load.generator.CollectorInformations;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.mortbay.jetty.load.generator.listeners.CollectorInformations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -301,7 +302,9 @@ public class LoadGeneratorProjectAction
 
         StringWriter stringWriter = new StringWriter();
 
-        new ObjectMapper().writeValue( stringWriter, statusResults );
+        new ObjectMapper() //
+            .disable( SerializationFeature.FAIL_ON_EMPTY_BEANS ) //
+            .writeValue( stringWriter, statusResults );
 
         rsp.getWriter().write( stringWriter.toString() );
     }

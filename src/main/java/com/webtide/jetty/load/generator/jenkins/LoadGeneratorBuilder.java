@@ -17,7 +17,9 @@
 
 package com.webtide.jetty.load.generator.jenkins;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Extension;
@@ -41,8 +43,8 @@ import hudson.util.ReflectionUtils;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import jenkins.tasks.SimpleBuildStep;
+import org.HdrHistogram.AtomicHistogram;
 import org.HdrHistogram.Histogram;
-import org.HdrHistogram.Recorder;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
@@ -51,22 +53,20 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.client.HttpClient;
-import org.mortbay.jetty.load.generator.CollectorInformations;
 import org.mortbay.jetty.load.generator.LoadGenerator;
-import org.mortbay.jetty.load.generator.ValueListener;
-import org.mortbay.jetty.load.generator.latency.LatencyTimeListener;
-import org.mortbay.jetty.load.generator.profile.Resource;
-import org.mortbay.jetty.load.generator.report.DetailledTimeReportListener;
-import org.mortbay.jetty.load.generator.report.DetailledTimeValuesReport;
-import org.mortbay.jetty.load.generator.report.GlobalSummaryListener;
-import org.mortbay.jetty.load.generator.report.SummaryReport;
-import org.mortbay.jetty.load.generator.responsetime.ResponseNumberPerPath;
-import org.mortbay.jetty.load.generator.responsetime.ResponsePerStatus;
-import org.mortbay.jetty.load.generator.responsetime.ResponseTimeListener;
-import org.mortbay.jetty.load.generator.responsetime.TimePerPathListener;
+import org.mortbay.jetty.load.generator.Resource;
+import org.mortbay.jetty.load.generator.listeners.CollectorInformations;
+import org.mortbay.jetty.load.generator.listeners.report.DetailledTimeReportListener;
+import org.mortbay.jetty.load.generator.listeners.report.DetailledTimeValuesReport;
+import org.mortbay.jetty.load.generator.listeners.report.GlobalSummaryListener;
+import org.mortbay.jetty.load.generator.listeners.report.SummaryReport;
+import org.mortbay.jetty.load.generator.listeners.responsetime.ResponseNumberPerPath;
+import org.mortbay.jetty.load.generator.listeners.responsetime.ResponsePerStatus;
+import org.mortbay.jetty.load.generator.listeners.responsetime.TimePerPathListener;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,11 +112,11 @@ public class LoadGeneratorBuilder
 
     private final String transactionRate;
 
-    private List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
+    private List<Resource.NodeListener> nodeListeners = new ArrayList<>();
 
     private Resource loadResource;
 
-    private LoadGenerator.Transport transport;
+    private LoadGeneratorStarterArgs.Transport transport;
 
     private boolean secureProtocol;
 
@@ -132,7 +132,7 @@ public class LoadGeneratorBuilder
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
                                  String runningTime, TimeUnit runningTimeUnit, String runIteration, String transactionRate,
-                                 LoadGenerator.Transport transport, boolean secureProtocol )
+                                 LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
         this.host = host;
@@ -149,7 +149,7 @@ public class LoadGeneratorBuilder
 
     public LoadGeneratorBuilder( Resource resource, String host, String port, String users,
                                  String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
-                                 String transactionRate, LoadGenerator.Transport transport, boolean secureProtocol, String jvmExtraArgs,
+                                 String transactionRate, LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol, String jvmExtraArgs,
                                  String generatorNumber)
     {
 
@@ -200,9 +200,9 @@ public class LoadGeneratorBuilder
         return runIteration;
     }
 
-    public void addResponseTimeListener( ResponseTimeListener responseTimeListener )
+    public void addNodeListener( Resource.NodeListener nodeListener )
     {
-        this.responseTimeListeners.add( responseTimeListener );
+        this.nodeListeners.add( nodeListener );
     }
 
     public String getTransactionRate()
@@ -220,7 +220,7 @@ public class LoadGeneratorBuilder
         this.loadResource = loadResource;
     }
 
-    public LoadGenerator.Transport getTransport()
+    public LoadGeneratorStarterArgs.Transport getTransport()
     {
         return transport;
     }
@@ -375,19 +375,16 @@ public class LoadGeneratorBuilder
         // -------------------------
         // listeners to get data files
         // -------------------------
-        List<ResponseTimeListener> responseTimeListeners = new ArrayList<>();
+        List<Resource.NodeListener> nodeListeners = new ArrayList<>();
 
-        Path responseTimeResultFilePath = Paths.get( launcher.getChannel() //
+        Path resultFilePath = Paths.get( launcher.getChannel() //
                                              .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
 
-        responseTimeListeners.add( new ValuesFileWriter( responseTimeResultFilePath ) );
+        ValuesFileWriter valuesFileWriter = new ValuesFileWriter( resultFilePath );
+        nodeListeners.add( valuesFileWriter );
 
-        List<LatencyTimeListener> latencyTimeListeners = new ArrayList<>();
-
-        Path latencyTimeResultFilePath = Paths.get( launcher.getChannel() //
-                                                         .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
-
-        latencyTimeListeners.add( new ValuesFileWriter( latencyTimeResultFilePath ) );
+        List<LoadGenerator.Listener> loadGeneratorListeners = new ArrayList<>(  );
+        loadGeneratorListeners.add( valuesFileWriter );
 
         Path statsResultFilePath = Paths.get( launcher.getChannel() //
                                                    .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
@@ -397,13 +394,11 @@ public class LoadGeneratorBuilder
 
         String monitorUrl = getMonitorUrl( taskListener, run );
 
-        int dryRun = StringUtils.isNotEmpty( getDryRun() ) ? //
-            Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1;
-
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
-                                                     responseTimeListeners, latencyTimeListeners, args, getJvmExtraArgs(), //
-                                                     dryRun, monitorUrl);
+                                                     nodeListeners, loadGeneratorListeners, //
+                                                     args, getJvmExtraArgs(), //
+                                                     monitorUrl);
 
         String stats = workspace.child( statsResultFilePath.toString() ).readToString();
 
@@ -422,34 +417,24 @@ public class LoadGeneratorBuilder
 
         ResponseNumberPerPath responseNumberPerPath = new ResponseNumberPerPath();
 
-        responseTimeListeners.clear();
-        if ( this.responseTimeListeners != null )
+        nodeListeners.clear();
+        if ( this.nodeListeners != null )
         {
-            responseTimeListeners.addAll( this.responseTimeListeners );
+            nodeListeners.addAll( this.nodeListeners );
         }
-        responseTimeListeners.add( responseNumberPerPath );
-        responseTimeListeners.add( timePerPathListener );
-        responseTimeListeners.add( globalSummaryListener );
-        responseTimeListeners.add( detailledTimeReportListener );
-        responseTimeListeners.add( responsePerStatus );
-
-
-        latencyTimeListeners.clear();
-        latencyTimeListeners.add( timePerPathListener );
-        latencyTimeListeners.add( globalSummaryListener );
-        latencyTimeListeners.add( detailledTimeReportListener );
+        nodeListeners.add( responseNumberPerPath );
+        nodeListeners.add( timePerPathListener );
+        nodeListeners.add( globalSummaryListener );
+        nodeListeners.add( detailledTimeReportListener );
+        nodeListeners.add( responsePerStatus );
 
         LOGGER.info( "LoadGenerator parsing response result files" );
 
         //-------------------------------------------------
-        // response time values
+        // time values
         //-------------------------------------------------
-        parseResponseTimeValues(workspace, responseTimeResultFilePath, responseTimeListeners);
+        parseTimeValues( workspace, resultFilePath, nodeListeners);
 
-        //-------------------------------------------------
-        // latency time values
-        //-------------------------------------------------
-        parseLatencyValues(workspace, latencyTimeResultFilePath, latencyTimeListeners);
 
         //-------------------------------------------------
         // Monitor values
@@ -462,7 +447,9 @@ public class LoadGeneratorBuilder
 
         try
         {
-            monitoringResultMap = new ObjectMapper().readValue( monitorJson, Map.class );
+            monitoringResultMap = new ObjectMapper() //
+                .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES ) //
+                .readValue( monitorJson, Map.class );
         }
         catch ( Exception e )
         {
@@ -471,12 +458,10 @@ public class LoadGeneratorBuilder
         // manage results
 
         SummaryReport summaryReport = new SummaryReport(run.getId());
-
-
-        for ( Map.Entry<String, Recorder> entry : timePerPathListener.getResponseTimePerPath().entrySet() )
+        for ( Map.Entry<String, AtomicHistogram> entry : timePerPathListener.getResponseTimePerPath().entrySet() )
         {
             String path = entry.getKey();
-            Histogram histogram = entry.getValue().getIntervalHistogram();
+            Histogram histogram = entry.getValue();
 
             AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
             LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
@@ -488,10 +473,10 @@ public class LoadGeneratorBuilder
 
 
 
-        for ( Map.Entry<String, Recorder> entry : timePerPathListener.getLatencyTimePerPath().entrySet() )
+        for ( Map.Entry<String, AtomicHistogram> entry : timePerPathListener.getLatencyTimePerPath().entrySet() )
         {
             String path = entry.getKey();
-            Histogram histogram = entry.getValue().getIntervalHistogram();
+            Histogram histogram = entry.getValue();
 
             AtomicInteger number = responseNumberPerPath.getResponseNumberPerPath().get( path );
             LOGGER.debug( "responseTimePerPath: {} - mean: {}ms - number: {}", //
@@ -533,15 +518,15 @@ public class LoadGeneratorBuilder
 
         getCurrentNode(launcher.getComputer()) //
             .getChannel() //
-            .call( new LoadGeneratorProcessFactory.DeleteTmpFile( responseTimeResultFilePath.toString() ) );
+            .call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
 
 
 
         LOGGER.info( "LoadGenerator end" );
     }
 
-    protected void parseResponseTimeValues( FilePath workspace, Path responseTimeResultFilePath,
-                                       List<ResponseTimeListener> responseTimeListeners )
+    protected void parseTimeValues( FilePath workspace, Path responseTimeResultFilePath,
+                                    List<Resource.NodeListener> nodeListeners )
         throws Exception
     {
         Path responseTimeResultFile = Files.createTempFile( "loadgenerator_result_responsetime", ".csv" );
@@ -553,58 +538,22 @@ public class LoadGeneratorBuilder
         csvParser.forEach(
             strings ->
             {
-                ValueListener.Values values = new ValueListener.Values() //
+                Values values = new Values() //
                     .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
                     .method( strings.get( 1 ) ) //
                     .path( strings.get( 2 ) ) //
-                    .time( Long.parseLong( strings.get( 3 ) ) ) //
-                    .status( Integer.parseInt( strings.get( 4 ) ) ) //
-                    .size( Long.parseLong( strings.get( 5 ) ) );
-                for (ResponseTimeListener listener : responseTimeListeners)
+                    .status( Integer.parseInt( strings.get( 3 ) ) ) //
+                    .size( Long.parseLong( strings.get( 4 ) ) ) //
+                    .responseTime( Long.parseLong( strings.get( 5 ) ) ) //
+                    .latencyTime( Long.parseLong( strings.get( 6 ) ) );
+
+                for (Resource.NodeListener listener : nodeListeners)
                 {
-                    listener.onResponseTimeValue( values );
+                    listener.onResourceNode( values.getInfo() );
                 }
             } );
 
         Files.deleteIfExists( responseTimeResultFile );
-    }
-
-    protected void parseLatencyValues( FilePath workspace, Path latencyTimeResultFilePath,
-                                       List<LatencyTimeListener> latencyTimeListeners )
-        throws Exception
-    {
-
-        Path latencyTimeResultFile = Files.createTempFile( "loadgenerator_result_latency", ".csv" );
-
-        workspace.child( latencyTimeResultFilePath.toString() ).copyTo(
-            Files.newOutputStream( latencyTimeResultFile ) );
-
-        CSVParser csvParser =
-            new CSVParser( Files.newBufferedReader( latencyTimeResultFile ), CSVFormat.newFormat( '|' ) );
-
-        csvParser.forEach( strings ->
-                           {
-                               try
-                               {
-                                   ValueListener.Values values = new ValueListener.Values() //
-                                       .eventTimestamp( Long.parseLong( strings.get( 0 ) ) ) //
-                                       .method( strings.get( 1 ) ) //
-                                       .path( strings.get( 2 ) ) //
-                                       .time( Long.parseLong( strings.get( 3 ) ) ) //
-                                       .status( Integer.parseInt( strings.get( 4 ) ) ) //
-                                       .size( Long.parseLong( strings.get( 5 ) ) );
-                                   for ( LatencyTimeListener listener : latencyTimeListeners )
-                                   {
-                                       listener.onLatencyTimeValue( values );
-                                   }
-                               }
-                               catch ( Exception e )
-                               {
-                                   e.printStackTrace();
-                               }
-                           } );
-
-        Files.deleteIfExists( latencyTimeResultFile );
     }
 
     protected List<String> getArgsProcess( Resource resource, Computer computer,
@@ -650,6 +599,14 @@ public class LoadGeneratorBuilder
                 default:
                     throw new IllegalArgumentException( runningTimeUnit + " is not recognized" );
             }
+        }
+
+        int dryRun = StringUtils.isNotEmpty( getDryRun() ) ? //
+            Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1;
+
+        if (dryRun > 0)
+        {
+            cmdLine.add( "-wn" ).add( dryRun );
         }
 
         // FIXME deleting tmp file
@@ -711,6 +668,7 @@ public class LoadGeneratorBuilder
             throws IOException
         {
             ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
             Path tmpPath = Files.createTempFile( "profile", ".tmp" );
             objectMapper.writeValue( tmpPath.toFile(), resource );
             return tmpPath.toString();
@@ -790,11 +748,10 @@ public class LoadGeneratorBuilder
                                                                         TimeUnit.SECONDS, //
                                                                         TimeUnit.MILLISECONDS );
 
-        private static final List<LoadGenerator.Transport> TRANSPORTS = Arrays.asList( LoadGenerator.Transport.HTTP, //
-                                                                                       LoadGenerator.Transport.HTTPS, //
-                                                                                       LoadGenerator.Transport.H2, //
-                                                                                       LoadGenerator.Transport.H2C, //
-                                                                                       LoadGenerator.Transport.FCGI );
+        private static final List<LoadGeneratorStarterArgs.Transport> TRANSPORTS = Arrays.asList( LoadGeneratorStarterArgs.Transport.HTTP,//
+                                                                                                  LoadGeneratorStarterArgs.Transport.HTTPS,//
+                                                                                                  LoadGeneratorStarterArgs.Transport.H2,//
+                                                                                                  LoadGeneratorStarterArgs.Transport.H2C );
 
         /**
          * This human readable name is used in the configuration screen.
@@ -814,7 +771,7 @@ public class LoadGeneratorBuilder
             return Jenkins.getInstance().getJDKs();
         }
 
-        public List<LoadGenerator.Transport> getTransports()
+        public List<LoadGeneratorStarterArgs.Transport> getTransports()
         {
             return TRANSPORTS;
         }

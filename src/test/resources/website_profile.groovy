@@ -15,9 +15,9 @@
 //  You may elect to redistribute this code under either of these licenses.
 //  ========================================================================
 
-import org.mortbay.jetty.load.generator.profile.Resource
+import org.mortbay.jetty.load.generator.Resource
 
-return new Resource(new Resource( "index.html",
+return new Resource( "/index.html",
                              new Resource( "/style.css",
                                new Resource( "/logo.gif" ),
                                new Resource( "/spacer.png" )
@@ -31,5 +31,4 @@ return new Resource(new Resource( "index.html",
                             new Resource( "/iframeContents.html" ),
                             new Resource( "/moreIframeContents.html" ),
                             new Resource( "/favicon.ico" )
-    )
 );

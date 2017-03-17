@@ -29,7 +29,8 @@ import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.SocketAddressResolver;
-import org.mortbay.jetty.load.generator.latency.LatencyTimeListener;
+import org.mortbay.jetty.load.generator.LoadGenerator;
+import org.mortbay.jetty.load.generator.Resource;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -44,9 +45,10 @@ public class LoadGeneratorProcessRunner
 {
 
     public void runProcess( TaskListener taskListener, FilePath workspace, Launcher launcher, String jdkName, //
-                            Node currentNode, List<?> responseTimeListeners,
-                            List<LatencyTimeListener> latencyTimeListeners, //
-                            List<String> args, String jvmExtraArgs, int dryRun, String monitorUrl )
+                            Node currentNode,
+                            List<Resource.NodeListener> nodeListeners, //
+                            List<LoadGenerator.Listener> loadGeneratorListeners, //
+                            List<String> args, String jvmExtraArgs, String monitorUrl )
         throws Exception
     {
         Channel channel = null;
@@ -60,33 +62,10 @@ public class LoadGeneratorProcessRunner
             channel =
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
 
-            // first run as dry run if configured
-            if ( dryRun > 0 )
-            {
-                ArgumentListBuilder cmdLine = new ArgumentListBuilder( args.toArray( new String[args.size()] ) ) //
-                    .add( "-ri" ).add( dryRun ) //
-                    .add( "-notint" );
-                channel.call( new LoadCaller( cmdLine.toList(), responseTimeListeners, latencyTimeListeners ) );
-                for ( Object listener : responseTimeListeners )
-                {
-                    if ( listener instanceof ValuesFileWriter )
-                    {
-                        ( (ValuesFileWriter) listener ).reset();
-                    }
-                }
-                for ( Object listener : latencyTimeListeners )
-                {
-                    if ( listener instanceof ValuesFileWriter )
-                    {
-                        ( (ValuesFileWriter) listener ).reset();
-                    }
-                }
-            }
-
             String response = startMonitor( monitorUrl, taskListener );
             taskListener.getLogger().println( "start monitor call " + response );
 
-            channel.call( new LoadCaller( args, responseTimeListeners, latencyTimeListeners ) );
+            channel.call( new LoadCaller( args, nodeListeners, loadGeneratorListeners ) );
 
             long end = System.nanoTime();
 
@@ -135,15 +114,15 @@ public class LoadGeneratorProcessRunner
     {
         private final List<String> args;
 
-        private final List<?> responseTimeListeners;
+        private final List<?> nodeListeners;
 
-        private final List<?> latencyTimeListeners;
+        private final List<?> loadGeneratorListeners;
 
-        public LoadCaller( List<String> args, List<?> responseTimeListeners, List<?> latencyTimeListeners )
+        public LoadCaller( List<String> args, List<?> nodeListeners, List<?> loadGeneratorListeners)
         {
             this.args = args;
-            this.responseTimeListeners = responseTimeListeners;
-            this.latencyTimeListeners = latencyTimeListeners;
+            this.nodeListeners = nodeListeners;
+            this.loadGeneratorListeners = loadGeneratorListeners;
         }
 
         @Override
@@ -156,12 +135,13 @@ public class LoadGeneratorProcessRunner
                 classLoader.loadClass( "org.mortbay.jetty.load.generator.starter.JenkinsRemoteStarter" );
 
             Method setResponseTimeListeners =
-                jenkinsRemoteStarterClazz.getMethod( "setResponseTimeListeners", List.class );
-            setResponseTimeListeners.invoke( null, responseTimeListeners );
+                jenkinsRemoteStarterClazz.getMethod( "setNodeListeners", List.class );
+            setResponseTimeListeners.invoke( null, nodeListeners );
 
-            Method setLatencyTimeListeners =
-                jenkinsRemoteStarterClazz.getMethod( "setLatencyTimeListeners", List.class );
-            setLatencyTimeListeners.invoke( null, latencyTimeListeners );
+
+            Method setLoadGeneratorListeners =
+                jenkinsRemoteStarterClazz.getMethod( "setLoadGeneratorListeners", List.class );
+            setLoadGeneratorListeners.invoke( null, loadGeneratorListeners );
 
             Method launch = jenkinsRemoteStarterClazz.getMethod( "launch", List.class );
 
