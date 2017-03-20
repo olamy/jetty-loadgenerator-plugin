@@ -72,13 +72,13 @@ public class LoadGeneratorBuilderStep
 
     private int generatorNumber = 1;
 
-    private int dryRun = 0;
+    private int warmupNumber = 0;
 
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( Resource resourceProfile, String host, int port, int users,
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
                                      int runIteration, int transactionRate, LoadGeneratorStarterArgs.Transport transport,
-                                     boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int dryRun )
+                                     boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int warmupNumber )
     {
         this.resource = resourceProfile;
         this.host = host;
@@ -93,7 +93,7 @@ public class LoadGeneratorBuilderStep
         this.secureProtocol = secureProtocol;
         this.jvmExtraArgs = jvmExtraArgs;
         this.generatorNumber = generatorNumber;
-        this.dryRun = dryRun;
+        this.warmupNumber = warmupNumber;
     }
 
     public Resource getResource()
@@ -172,9 +172,9 @@ public class LoadGeneratorBuilderStep
         return generatorNumber;
     }
 
-    public int getDryRun()
+    public int getWarmupNumber()
     {
-        return dryRun;
+        return warmupNumber;
     }
 
     @Extension

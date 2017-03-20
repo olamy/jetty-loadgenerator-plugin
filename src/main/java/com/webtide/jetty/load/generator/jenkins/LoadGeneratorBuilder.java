@@ -126,7 +126,7 @@ public class LoadGeneratorBuilder
 
     private String generatorNumber = "1";
 
-    private String dryRun = "0";
+    private String warmupNumber = "0";
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
@@ -147,10 +147,10 @@ public class LoadGeneratorBuilder
         this.secureProtocol = secureProtocol;
     }
 
-    public LoadGeneratorBuilder( Resource resource, String host, String port, String users,
-                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration,
-                                 String transactionRate, LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol, String jvmExtraArgs,
-                                 String generatorNumber)
+    public LoadGeneratorBuilder( Resource resource, String host, String port, String users, //
+                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration, //
+                                 String transactionRate, LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol, //
+                                 String jvmExtraArgs, String generatorNumber)
     {
 
         this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, transactionRate,
@@ -264,15 +264,15 @@ public class LoadGeneratorBuilder
         this.generatorNumber = generatorNumber;
     }
 
-    public String getDryRun()
+    public String getWarmupNumber()
     {
-        return dryRun;
+        return warmupNumber;
     }
 
     @DataBoundSetter
-    public void setDryRun( String dryRun )
+    public void setWarmupNumber( String warmupNumber )
     {
-        this.dryRun = dryRun;
+        this.warmupNumber = warmupNumber;
     }
 
     @Override
@@ -600,12 +600,12 @@ public class LoadGeneratorBuilder
             }
         }
 
-        int dryRun = StringUtils.isNotEmpty( getDryRun() ) ? //
-            Integer.parseInt( expandTokens( taskListener, this.getDryRun(), run ) ) : -1;
+        int warmupNumber = StringUtils.isNotEmpty( getWarmupNumber() ) ? //
+            Integer.parseInt( expandTokens( taskListener, this.getWarmupNumber(), run ) ) : -1;
 
-        if (dryRun > 0)
+        if (warmupNumber > 0)
         {
-            cmdLine.add( "-wn" ).add( dryRun );
+            cmdLine.add( "-wn" ).add( warmupNumber );
         }
 
         // FIXME deleting tmp file
