@@ -458,8 +458,8 @@ public class LoadGeneratorBuilder
         // manage results
 
         SummaryReport summaryReport = new SummaryReport(run.getId());
-        for ( Map.Entry<String, AtomicHistogram> entry : timePerPathListener.getResponseTimePerPath().entrySet() )
-        {
+
+        timePerPathListener.getResponseTimePerPath().entrySet().stream().forEach( entry ->  {
             String path = entry.getKey();
             Histogram histogram = entry.getValue();
 
@@ -468,13 +468,11 @@ public class LoadGeneratorBuilder
                           path, //
                           TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                           number.get() );
-            summaryReport.addResponseTimeInformations( path, new CollectorInformations( histogram ) );
-        }
+            summaryReport.addResponseTimeInformations( path, new CollectorInformations( histogram, //
+                                                                                        TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ) );
+        } );
 
-
-
-        for ( Map.Entry<String, AtomicHistogram> entry : timePerPathListener.getLatencyTimePerPath().entrySet() )
-        {
+        timePerPathListener.getLatencyTimePerPath().entrySet().stream().forEach( entry -> {
             String path = entry.getKey();
             Histogram histogram = entry.getValue();
 
@@ -483,17 +481,16 @@ public class LoadGeneratorBuilder
                           path, //
                           TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                           number.get() );
-            summaryReport.addLatencyTimeInformations( path, new CollectorInformations( histogram ) );
-        }
-
+            summaryReport.addLatencyTimeInformations( path, new CollectorInformations( histogram, //
+                                                                                       TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ) );
+        } );
 
         // FIXME calculate score from previous build
         HealthReport healthReport = new HealthReport( 30, "text" );
 
         Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath = new HashMap<>();
 
-        for ( DetailledTimeValuesReport.Entry entry : detailledTimeReportListener.getDetailledResponseTimeValuesReport().getEntries() )
-        {
+        detailledTimeReportListener.getDetailledLatencyTimeValuesReport().getEntries().stream().forEach( entry -> {
             List<ResponseTimeInfo> responseTimeInfos = allResponseInfoTimePerPath.get( entry.getPath() );
             if ( responseTimeInfos == null )
             {
@@ -503,15 +500,17 @@ public class LoadGeneratorBuilder
             responseTimeInfos.add( new ResponseTimeInfo( entry.getTimeStamp(), //
                                                          TimeUnit.NANOSECONDS.toMillis( entry.getTime() ), //
                                                          entry.getHttpStatus() ) );
+        } );
 
-        }
 
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getResponseTimeHistogram().getIntervalHistogram() ), //
+                                                         globalSummaryListener.getResponseTimeHistogram().getIntervalHistogram(), //
+                                                         TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ), //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram() ), //
+                                                         globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram(), //
+                                                         TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ), //
                                                      allResponseInfoTimePerPath, run, monitoringResultMap, stats ) );
 
         // cleanup
@@ -699,7 +698,7 @@ public class LoadGeneratorBuilder
             compilerConfiguration.setVerbose( true );
 
             compilerConfiguration.addCompilationCustomizers(
-                new ImportCustomizer().addStarImports( "org.eclipse.jetty.load.generator.profile" ) );
+                new ImportCustomizer().addStarImports( "org.eclipse.jetty.load.generator" ) );
 
             GroovyShell interpreter = new GroovyShell( Resource.class.getClassLoader(), //
                                                        new Binding(), //

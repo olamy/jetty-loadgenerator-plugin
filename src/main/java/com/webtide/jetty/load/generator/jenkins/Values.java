@@ -29,7 +29,7 @@ public class Values
 {
 
     /**
-     * the timestamp in millis seconds
+     * the timestamp in nano seconds
      */
     private long eventTimestamp;
 

@@ -136,7 +136,6 @@ public class LoadGeneratorProjectAction
         public RunInformations( String buildId, CollectorInformations collectorInformations )
         {
             this.buildId = buildId;
-            setInformationType( collectorInformations.getInformationType() );
             totalCount( collectorInformations.getTotalCount() );
             minValue( collectorInformations.getMinValue() );
             maxValue( collectorInformations.getMaxValue() );
