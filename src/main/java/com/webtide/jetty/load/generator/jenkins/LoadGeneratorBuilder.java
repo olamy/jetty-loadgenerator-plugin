@@ -43,7 +43,6 @@ import hudson.util.ReflectionUtils;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import jenkins.tasks.SimpleBuildStep;
-import org.HdrHistogram.AtomicHistogram;
 import org.HdrHistogram.Histogram;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -53,25 +52,26 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.client.HttpClient;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.mortbay.jetty.load.generator.LoadGenerator;
 import org.mortbay.jetty.load.generator.Resource;
 import org.mortbay.jetty.load.generator.listeners.CollectorInformations;
 import org.mortbay.jetty.load.generator.listeners.report.DetailledTimeReportListener;
-import org.mortbay.jetty.load.generator.listeners.report.DetailledTimeValuesReport;
 import org.mortbay.jetty.load.generator.listeners.report.GlobalSummaryListener;
 import org.mortbay.jetty.load.generator.listeners.report.SummaryReport;
 import org.mortbay.jetty.load.generator.listeners.responsetime.ResponseNumberPerPath;
 import org.mortbay.jetty.load.generator.listeners.responsetime.ResponsePerStatus;
 import org.mortbay.jetty.load.generator.listeners.responsetime.TimePerPathListener;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.io.Serializable;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -560,7 +560,14 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-        final String tmpFilePath = getCurrentNode(computer).getChannel().call( new CopyResource( resource ) );
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
+        StringWriter stringWriter = new StringWriter(  );
+        objectMapper.writeValue( stringWriter, resource );
+        stringWriter.close();
+
+        final String tmpFilePath = getCurrentNode(computer) //
+            .getChannel().call( new CopyResource( stringWriter.toString() ) );
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
@@ -654,22 +661,21 @@ public class LoadGeneratorBuilder
 
     static class CopyResource
         extends MasterToSlaveCallable<String, IOException>
+        implements Serializable
     {
-        private Resource resource;
+        private String resourceAsJson;
 
-        public CopyResource( Resource resource )
+        public CopyResource( String resourceAsJson )
         {
-            this.resource = resource;
+            this.resourceAsJson = resourceAsJson;
         }
 
         @Override
         public String call()
             throws IOException
         {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
             Path tmpPath = Files.createTempFile( "profile", ".tmp" );
-            objectMapper.writeValue( tmpPath.toFile(), resource );
+            Files.write( tmpPath, resourceAsJson.getBytes() );
             return tmpPath.toString();
         }
     }
