@@ -578,7 +578,8 @@ public class LoadGeneratorBuilder
             .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
             .add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
             .add( "-stf" ).add( statsResultFilePath ) //
-            .add( "-css" );
+            .add( "-css" ) //
+            .add( "--scheme" ).add( isSecureProtocol()? "https" : "http" );
 
         if ( StringUtils.isNotBlank( runIteration ) )
         {
