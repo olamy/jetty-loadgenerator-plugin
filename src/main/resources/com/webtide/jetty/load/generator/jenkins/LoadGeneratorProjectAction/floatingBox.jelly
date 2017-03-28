@@ -5,7 +5,34 @@
          xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
   <m:import/>
 
-  <div class="graph-container floating-box-latency-time" align="right" >
+  <div class="graph-container floating-box-response-time" align="right">
+    <div id="load_generator_response_time_trend" class="graph" style="width: 85%;height: 170px">
+    </div>
+    <script type="text/javascript" language="javascript">
+      jQueryLoadGenerator.noConflict();
+      jQueryLoadGenerator.getJSON("loadgenerator/responseTimeTrend", function (json) {
+      var grah = Morris.Line({
+      element: 'load_generator_response_time_trend',
+      data: json,
+      xkey: 'buildId',
+      ykeys: ['mean','value90'], // ,'maxValue'
+      labels: ['Mean', '90 Percentile'], // , 'Max'
+      resize: true,
+      pointSize: 1,
+      parseTime: false,
+      hideHover: 'auto',
+      dateFormat: function(x) {
+      return x;
+      },
+      xLabelFormat: function(x) {
+      return 'Build #' + x.src.buildId;
+      }
+      });
+      });
+    </script>
+  </div>
+
+  <div class="graph-container floating-box-latency-time" align="right">
       <div id="load_generator_latency_time_trend" class="graph" style="width: 85%;height: 170px">
       </div>
       <script type="text/javascript" language="javascript">
@@ -15,8 +42,8 @@
           element: 'load_generator_latency_time_trend',
           data: json,
           xkey: 'buildId',
-          ykeys: ['mean','maxValue','value90'],
-          labels: ['Mean', 'Max', '90 Percentile'],
+          ykeys: ['mean','value90'], // ,'maxValue'
+          labels: ['Mean', '90 Percentile'], //, 'Max'
           resize: true,
           pointSize: 1,
           parseTime: false,
@@ -30,39 +57,9 @@
           });
         });
       </script>
-
   </div>
 
-  <div class="graph-container floating-box-response-time" align="right" >
-      <div id="load_generator_response_time_trend" class="graph" style="width: 85%;height: 170px">
-      </div>
-      <script type="text/javascript" language="javascript">
-          jQueryLoadGenerator.noConflict();
-          jQueryLoadGenerator.getJSON("loadgenerator/responseTimeTrend", function (json) {
-            var grah = Morris.Line({
-              element: 'load_generator_response_time_trend',
-              data: json,
-              xkey: 'buildId',
-              ykeys: ['mean','maxValue','value90'],
-              labels: ['Mean', 'Max', '90 Percentile'],
-              resize: true,
-              pointSize: 1,
-              parseTime: false,
-              hideHover: 'auto',
-              dateFormat: function(x) {
-                            return x;
-                          },
-              xLabelFormat: function(x) {
-                            return 'Build #' + x.src.buildId;
-                          }
-            });
-          });
-      </script>
-
-  </div>
-
-
-  <div class="graph-container floating-box-gc-usage-family" align="right" >
+  <div class="graph-container floating-box-gc-usage-family" align="right">
     <div id="load_generator_gc_usage_trend" class="graph" style="width: 85%;height: 170px">
     </div>
     <script type="text/javascript" language="javascript">
