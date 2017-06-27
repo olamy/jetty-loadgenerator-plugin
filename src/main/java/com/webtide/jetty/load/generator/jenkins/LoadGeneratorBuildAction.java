@@ -61,7 +61,7 @@ public class LoadGeneratorBuildAction
     private final Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath;
 
     /**
-     * key is the http status fam
+     * key is the http status family 1,2,3,4,5
      */
     private final Map<Integer, LongAdder> responseNumberPerStatusFamily = new TreeMap<>( );
 
