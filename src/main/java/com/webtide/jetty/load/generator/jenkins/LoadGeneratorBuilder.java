@@ -130,6 +130,8 @@ public class LoadGeneratorBuilder
 
     private String warmupNumber = "0";
 
+    private String alpnVersion;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
@@ -277,6 +279,17 @@ public class LoadGeneratorBuilder
         this.warmupNumber = warmupNumber;
     }
 
+    public String getAlpnVersion()
+    {
+        return alpnVersion;
+    }
+
+    @DataBoundSetter
+    public void setAlpnVersion( String alpnVersion )
+    {
+        this.alpnVersion = alpnVersion;
+    }
+
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
@@ -396,11 +409,18 @@ public class LoadGeneratorBuilder
 
         String monitorUrl = getMonitorUrl( taskListener, run );
 
+        String alpnBootVersion = getAlpnVersion();
+        if(getTransport() == LoadGeneratorStarterArgs.Transport.HTTP //
+            || getTransport() == LoadGeneratorStarterArgs.Transport.HTTPS)
+        {
+            alpnBootVersion = "N/A";
+        }
+
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      nodeListeners, loadGeneratorListeners, //
                                                      args, getJvmExtraArgs(), //
-                                                     getAl);
+                                                     alpnBootVersion);
 
         String stats = workspace.child( statsResultFilePath.toString() ).readToString();
 

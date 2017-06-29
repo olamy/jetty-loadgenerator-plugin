@@ -52,6 +52,7 @@ public class LoadGeneratorProcessRunner
                             List<String> args, String jvmExtraArgs, String alpnVersion )
         throws Exception
     {
+
         Channel channel = null;
 
         try
@@ -61,11 +62,14 @@ public class LoadGeneratorProcessRunner
             JDK jdk = StringUtils.isEmpty( jdkName ) ? //
                 null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
 
-            // alpn version from jdk
-
-
             channel =
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
+
+            // alpn version from jdk
+            //if (StringUtils.isEmpty( alpnVersion ) && !StringUtils.equals( alpnVersion,  "N/A" ))
+            //{
+                alpnVersion = findAlpnVersion( channel, taskListener );
+            //}
 
             channel.call( new LoadCaller( args, nodeListeners, loadGeneratorListeners ) );
 
@@ -129,5 +133,24 @@ public class LoadGeneratorProcessRunner
         }
     }
 
+    private String findAlpnVersion(Channel channel, TaskListener taskListener)
+        throws Exception
+    {
+          String javaVersion = channel.call( new JavaVersionCallable() );
+          taskListener.getLogger().println( "found javaVersion " + javaVersion );
+          return javaVersion;
+    }
+
+    private static class JavaVersionCallable
+        extends MasterToSlaveCallable<String, Exception>
+        implements Serializable
+    {
+        @Override
+        public String call()
+            throws Exception
+        {
+            return System.getProperty( "java.version" );
+        }
+    }
 
 }

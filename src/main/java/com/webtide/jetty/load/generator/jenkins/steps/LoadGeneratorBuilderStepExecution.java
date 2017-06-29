@@ -67,6 +67,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ) );
         builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
         builder.setWarmupNumber( Integer.toString( loadGeneratorBuilderStep.getWarmupNumber() ) );
+        builder.setAlpnVersion( loadGeneratorBuilderStep.getAlpnVersion() );
 
         builder.doRun( taskListener, filePath, run, launcher );
 
