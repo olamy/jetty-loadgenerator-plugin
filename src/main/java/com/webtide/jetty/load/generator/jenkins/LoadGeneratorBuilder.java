@@ -400,7 +400,7 @@ public class LoadGeneratorBuilder
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      nodeListeners, loadGeneratorListeners, //
                                                      args, getJvmExtraArgs(), //
-                                                     monitorUrl);
+                                                     getAl);
 
         String stats = workspace.child( statsResultFilePath.toString() ).readToString();
 

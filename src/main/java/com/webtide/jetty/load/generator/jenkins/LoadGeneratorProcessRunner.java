@@ -26,6 +26,7 @@ import hudson.remoting.Channel;
 import hudson.util.ArgumentListBuilder;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.util.SocketAddressResolver;
@@ -48,7 +49,7 @@ public class LoadGeneratorProcessRunner
                             Node currentNode,
                             List<Resource.NodeListener> nodeListeners, //
                             List<LoadGenerator.Listener> loadGeneratorListeners, //
-                            List<String> args, String jvmExtraArgs, String monitorUrl )
+                            List<String> args, String jvmExtraArgs, String alpnVersion )
         throws Exception
     {
         Channel channel = null;
@@ -57,13 +58,14 @@ public class LoadGeneratorProcessRunner
         {
             long start = System.nanoTime();
 
-            JDK jdk =
-                jdkName == null ? null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
+            JDK jdk = StringUtils.isEmpty( jdkName ) ? //
+                null : Jenkins.getInstance().getJDK( jdkName ).forNode( currentNode, taskListener );
+
+            // alpn version from jdk
+
+
             channel =
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
-
-            String response = startMonitor( monitorUrl, taskListener );
-            taskListener.getLogger().println( "start monitor call " + response );
 
             channel.call( new LoadCaller( args, nodeListeners, loadGeneratorListeners ) );
 
@@ -79,30 +81,6 @@ public class LoadGeneratorProcessRunner
             {
                 channel.close();
             }
-        }
-
-    }
-
-    protected String startMonitor( String monitorUrl, TaskListener taskListener )
-        throws Exception
-    {
-        HttpClient httpClient = new HttpClient();
-        httpClient.setSocketAddressResolver( new SocketAddressResolver.Sync() );
-        try
-        {
-            httpClient.start();
-            String url = monitorUrl + "?start=true";
-            ContentResponse contentResponse = httpClient.newRequest( url ).send();
-            return contentResponse.getContentAsString();
-        }
-        catch ( Exception e )
-        {
-            taskListener.getLogger().println( "error calling start monitorUrl:" + monitorUrl + "," + e.getMessage() );
-            return "";
-        }
-        finally
-        {
-            httpClient.stop();
         }
 
     }
