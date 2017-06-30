@@ -36,6 +36,7 @@ import org.mortbay.jetty.load.generator.Resource;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,7 +50,8 @@ public class LoadGeneratorProcessRunner
                             Node currentNode,
                             List<Resource.NodeListener> nodeListeners, //
                             List<LoadGenerator.Listener> loadGeneratorListeners, //
-                            List<String> args, String jvmExtraArgs, String alpnVersion )
+                            List<String> args, String jvmExtraArgs, String alpnVersion, //
+                            Map<String, String> jdkVersionAlpnBootVersions )
         throws Exception
     {
 
@@ -66,10 +68,13 @@ public class LoadGeneratorProcessRunner
                 new LoadGeneratorProcessFactory().buildChannel( taskListener, jdk, workspace, launcher, jvmExtraArgs );
 
             // alpn version from jdk
-            //if (StringUtils.isEmpty( alpnVersion ) && !StringUtils.equals( alpnVersion,  "N/A" ))
-            //{
-                alpnVersion = findAlpnVersion( channel, taskListener );
-            //}
+            if ( StringUtils.isEmpty( alpnVersion ) && !StringUtils.equals( alpnVersion,  "N/A" ))
+            {
+
+                String javaVersion = findJavaVersion( channel, taskListener );
+                alpnVersion = jdkVersionAlpnBootVersions.get( javaVersion );
+                // download alpn jar
+            }
 
             channel.call( new LoadCaller( args, nodeListeners, loadGeneratorListeners ) );
 
@@ -133,7 +138,7 @@ public class LoadGeneratorProcessRunner
         }
     }
 
-    private String findAlpnVersion(Channel channel, TaskListener taskListener)
+    private String findJavaVersion(Channel channel, TaskListener taskListener)
         throws Exception
     {
           String javaVersion = channel.call( new JavaVersionCallable() );

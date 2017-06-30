@@ -410,6 +410,7 @@ public class LoadGeneratorBuilder
         String monitorUrl = getMonitorUrl( taskListener, run );
 
         String alpnBootVersion = getAlpnVersion();
+        // well a quick marker to say we do not need alpn
         if(getTransport() == LoadGeneratorStarterArgs.Transport.HTTP //
             || getTransport() == LoadGeneratorStarterArgs.Transport.HTTPS)
         {
@@ -420,7 +421,8 @@ public class LoadGeneratorBuilder
                                                      this.jdkName, getCurrentNode(launcher.getComputer()), //
                                                      nodeListeners, loadGeneratorListeners, //
                                                      args, getJvmExtraArgs(), //
-                                                     alpnBootVersion);
+                                                     alpnBootVersion, //
+                                                     AlpnBootVersions.getInstance().getJdkVersionAlpnBootVersion());
 
         String stats = workspace.child( statsResultFilePath.toString() ).readToString();
 

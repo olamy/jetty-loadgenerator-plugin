@@ -43,8 +43,7 @@ public class AlpnBootVersions
 
         try
         {
-            try (InputStream inputStream = Thread.currentThread() //
-                .getContextClassLoader().getResourceAsStream( "jetty/jetty-project.pom" ))
+            try (InputStream inputStream = this.getClass().getResourceAsStream( "/jetty/jetty-project.pom" ))
             {
 
                 SAXReader reader = new SAXReader();
