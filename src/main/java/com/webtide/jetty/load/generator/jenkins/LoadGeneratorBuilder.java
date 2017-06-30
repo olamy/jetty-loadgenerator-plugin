@@ -48,6 +48,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
@@ -602,12 +603,14 @@ public class LoadGeneratorBuilder
             .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
             .add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
             .add( "-stf" ).add( statsResultFilePath ) //
-            .add( "-css" ) //
+            //.add( "-css" ) //
             .add( "--scheme" ).add( isSecureProtocol()? "https" : "http" );
 
-        if ( StringUtils.isNotBlank( runIteration ) )
+        int iterationRuns = NumberUtils.toInt( expandTokens( taskListener, runIteration, run), 0 );
+
+        if ( iterationRuns > 0 )
         {
-            cmdLine.add( "-ri" ).add( expandTokens( taskListener, runIteration, run) );
+            cmdLine.add( "-ri" ).add( Integer.toString( iterationRuns ) );
         }
         else
         {
