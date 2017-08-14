@@ -13,10 +13,10 @@
   <f:entry title="${%Users}" field="users">
     <f:textbox/>
   </f:entry>
-  <f:entry title="${%Resource Groovy}" field="profileGroovy">
+  <f:entry title="${%Resource Groovy}" field="resourceGroovy">
     <f:expandableTextbox />
   </f:entry>
-  <f:entry title="${%Resource From Path}" field="profileFromFile">
+  <f:entry title="${%Resource From Path}" field="resourceFromFile">
     <f:textbox/>
   </f:entry>
   <f:entry title="${%Running Time}" field="runningTime">

@@ -24,6 +24,7 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 
 /**
@@ -65,6 +66,7 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs(), //
                                                                  Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ) );
+
         builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
         builder.setWarmupNumber( Integer.toString( loadGeneratorBuilderStep.getWarmupNumber() ) );
         builder.setAlpnVersion( loadGeneratorBuilderStep.getAlpnVersion() );

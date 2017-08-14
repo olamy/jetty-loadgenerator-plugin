@@ -96,7 +96,7 @@ public class LoadGeneratorBuilder
 
     private static final Logger LOGGER = LoggerFactory.getLogger( LoadGeneratorBuilder.class );
 
-    private final String profileGroovy;
+    private final String resourceGroovy;
 
     private final String host;
 
@@ -104,7 +104,7 @@ public class LoadGeneratorBuilder
 
     private final String users;
 
-    private final String profileFromFile;
+    private final String resourceFromFile;
 
     private final String runningTime;
 
@@ -136,15 +136,15 @@ public class LoadGeneratorBuilder
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
+    public LoadGeneratorBuilder( String resourceGroovy, String host, String port, String users, String resourceFromFile,
                                  String runningTime, TimeUnit runningTimeUnit, String runIteration, String resourceRate,
                                  LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol )
     {
-        this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
+        this.resourceGroovy = Util.fixEmptyAndTrim( resourceGroovy );
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileFromFile = profileFromFile;
+        this.resourceFromFile = resourceFromFile;
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
@@ -154,23 +154,24 @@ public class LoadGeneratorBuilder
     }
 
     public LoadGeneratorBuilder( Resource resource, String host, String port, String users, //
-                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
+                                 String resourceFromFile, String runningTime, TimeUnit runningTimeUnit,
                                  String runIteration,//
                                  String resourceRate, LoadGeneratorStarterArgs.Transport transport,
                                  boolean secureProtocol,//
                                  String jvmExtraArgs, String generatorNumber )
     {
 
-        this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, resourceRate,
+        this( null, host, port, users, resourceFromFile, runningTime, runningTimeUnit, runIteration, resourceRate,
               transport, secureProtocol );
         this.loadResource = resource;
         this.jvmExtraArgs = jvmExtraArgs;
         this.generatorNumber = generatorNumber;
+        //thi
     }
 
-    public String getProfileGroovy()
+    public String getResourceGroovy()
     {
-        return profileGroovy;
+        return resourceGroovy;
     }
 
     public String getHost()
@@ -188,9 +189,9 @@ public class LoadGeneratorBuilder
         return users;
     }
 
-    public String getProfileFromFile()
+    public String getResourceFromFile()
     {
-        return profileFromFile;
+        return resourceFromFile;
     }
 
     public String getRunningTime()
@@ -712,9 +713,9 @@ public class LoadGeneratorBuilder
 
         Resource resource = null;
 
-        String groovy = StringUtils.trim( this.getProfileGroovy() );
+        String groovy = StringUtils.trim( this.getResourceGroovy() );
 
-        String profileFromPath = getProfileFromFile();
+        String profileFromPath = getResourceFromFile();
 
         if ( StringUtils.isBlank( groovy ) && StringUtils.isNotBlank( profileFromPath ) )
         {
