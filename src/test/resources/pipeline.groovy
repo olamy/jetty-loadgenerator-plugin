@@ -3,7 +3,7 @@ import org.mortbay.jetty.load.generator.starter.LoadGeneratorStarterArgs
 
 node ('master') {
 
-  def profile = new Resource( "/jenkins",
+  def resource = new Resource( "/jenkins",
                                                   new Resource( "/jenkins/job/pipeline-test/",
                                                                 new Resource( "/logo.gif" ),
                                                                 new Resource( "/spacer.png" )
@@ -23,6 +23,6 @@ node ('master') {
 
   def timeUnit = java.util.concurrent.TimeUnit.SECONDS;
 
-  loadgenerator host: 'localhost', port: ${port}, resourceProfile: profile, users: 1, transactionRate: 1, transport: transport, runIteration: ${iteration}, runningTime: '20', runningTimeUnit: timeUnit
+  loadgenerator host: 'localhost', port: ${port}, resource: resource, users: 1, resourceRate: 1, transport: transport, runIteration: ${iteration}, runningTime: '20', runningTimeUnit: timeUnit
 
 }

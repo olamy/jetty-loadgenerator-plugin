@@ -52,7 +52,7 @@ public class LoadGeneratorBuilderStep
 
     private int users;
 
-    private String profileFromFile;
+    private String resourceFromFile;
 
     private String runningTime;
 
@@ -60,7 +60,7 @@ public class LoadGeneratorBuilderStep
 
     private int runIteration;
 
-    private int transactionRate;
+    private int resourceRate;
 
     private LoadGeneratorStarterArgs.Transport transport;
 
@@ -79,22 +79,22 @@ public class LoadGeneratorBuilderStep
     private int threadsNumber = 1;
 
     @DataBoundConstructor
-    public LoadGeneratorBuilderStep( Resource resourceProfile, String host, int port, int users, //
-                                     String profileFromFile, String runningTime, TimeUnit runningTimeUnit, //
-                                     int runIteration, int transactionRate,
+    public LoadGeneratorBuilderStep( Resource resource, String host, int port, int users, //
+                                     String resourceFromFile, String runningTime, TimeUnit runningTimeUnit, //
+                                     int runIteration, int resourceRate,
                                      LoadGeneratorStarterArgs.Transport transport, //
                                      boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int warmupNumber,
                                      int threadsNumber )
     {
-        this.resource = resourceProfile;
+        this.resource = resource;
         this.host = host;
         this.port = port;
         this.users = users;
-        this.profileFromFile = profileFromFile;
+        this.resourceFromFile = resourceFromFile;
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit;
         this.runIteration = runIteration;
-        this.transactionRate = transactionRate;
+        this.resourceRate = resourceRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
         this.jvmExtraArgs = jvmExtraArgs;
@@ -123,9 +123,9 @@ public class LoadGeneratorBuilderStep
         return users;
     }
 
-    public String getProfileFromFile()
+    public String getResourceFromFile()
     {
-        return profileFromFile;
+        return resourceFromFile;
     }
 
     public String getRunningTime()
@@ -143,9 +143,9 @@ public class LoadGeneratorBuilderStep
         return runIteration;
     }
 
-    public int getTransactionRate()
+    public int getResourceRate()
     {
-        return transactionRate;
+        return resourceRate;
     }
 
     public LoadGeneratorStarterArgs.Transport getTransport()

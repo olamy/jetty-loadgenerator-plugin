@@ -24,7 +24,6 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.workflow.steps.AbstractSynchronousStepExecution;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 
 /**
@@ -57,15 +56,15 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getHost(), //
                                                                  Integer.toString( loadGeneratorBuilderStep.getPort() ),//
                                                                  Integer.toString( loadGeneratorBuilderStep.getUsers() ),//
-                                                                 loadGeneratorBuilderStep.getProfileFromFile(), //
+                                                                 loadGeneratorBuilderStep.getResourceFromFile(), //
                                                                  loadGeneratorBuilderStep.getRunningTime(), //
                                                                  loadGeneratorBuilderStep.getRunningTimeUnit(), //
                                                                  Integer.toString( loadGeneratorBuilderStep.getRunIteration() ),//
-                                                                 Integer.toString( loadGeneratorBuilderStep.getTransactionRate() ),//
+                                                                 Integer.toString( loadGeneratorBuilderStep.getResourceRate() ),//
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs(), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ), //
+                                                                 Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ),//
                                                                  loadGeneratorBuilderStep.getThreadsNumber());
 
         builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
