@@ -76,12 +76,15 @@ public class LoadGeneratorBuilderStep
 
     private String alpnVersion;
 
+    private int threadsNumber = 1;
+
     @DataBoundConstructor
     public LoadGeneratorBuilderStep( Resource resourceProfile, String host, int port, int users, //
                                      String profileFromFile, String runningTime, TimeUnit runningTimeUnit, //
                                      int runIteration, int transactionRate,
                                      LoadGeneratorStarterArgs.Transport transport, //
-                                     boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int warmupNumber )
+                                     boolean secureProtocol, String jvmExtraArgs, int generatorNumber, int warmupNumber,
+                                     int threadsNumber )
     {
         this.resource = resourceProfile;
         this.host = host;
@@ -97,6 +100,7 @@ public class LoadGeneratorBuilderStep
         this.jvmExtraArgs = jvmExtraArgs;
         this.generatorNumber = generatorNumber;
         this.warmupNumber = warmupNumber;
+        this.threadsNumber = threadsNumber;
     }
 
     public Resource getResource()
@@ -189,6 +193,11 @@ public class LoadGeneratorBuilderStep
     public void setAlpnVersion( String alpnVersion )
     {
         this.alpnVersion = alpnVersion;
+    }
+
+    public int getThreadsNumber()
+    {
+        return threadsNumber;
     }
 
     @Extension

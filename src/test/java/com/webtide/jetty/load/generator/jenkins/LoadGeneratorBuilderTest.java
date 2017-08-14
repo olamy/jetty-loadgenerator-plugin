@@ -132,7 +132,7 @@ public class LoadGeneratorBuilderTest
                                       Integer.toString(iteration), //
                                       "1", //
                                       LoadGeneratorStarterArgs.Transport.HTTP, //
-                                      false );
+                                      false, 1 );
         //loadGeneratorBuilder.setJvmExtraArgs( "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000" );
 
         project.getBuildersList().add( loadGeneratorBuilder );

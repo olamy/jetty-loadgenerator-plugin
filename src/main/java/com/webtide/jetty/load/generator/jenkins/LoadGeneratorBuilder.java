@@ -138,7 +138,7 @@ public class LoadGeneratorBuilder
     @DataBoundConstructor
     public LoadGeneratorBuilder( String resourceGroovy, String host, String port, String users, String resourceFromFile,
                                  String runningTime, TimeUnit runningTimeUnit, String runIteration, String resourceRate,
-                                 LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol )
+                                 LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol, int threadsNumber )
     {
         this.resourceGroovy = Util.fixEmptyAndTrim( resourceGroovy );
         this.host = host;
@@ -151,6 +151,7 @@ public class LoadGeneratorBuilder
         this.resourceRate = StringUtils.isEmpty( resourceRate ) ? "1" : resourceRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
+        this.threadsNumber = threadsNumber;
     }
 
     public LoadGeneratorBuilder( Resource resource, String host, String port, String users, //
@@ -158,15 +159,14 @@ public class LoadGeneratorBuilder
                                  String runIteration,//
                                  String resourceRate, LoadGeneratorStarterArgs.Transport transport,
                                  boolean secureProtocol,//
-                                 String jvmExtraArgs, String generatorNumber )
+                                 String jvmExtraArgs, String generatorNumber, int threadsNumber )
     {
 
         this( null, host, port, users, resourceFromFile, runningTime, runningTimeUnit, runIteration, resourceRate,
-              transport, secureProtocol );
+              transport, secureProtocol, threadsNumber );
         this.loadResource = resource;
         this.jvmExtraArgs = jvmExtraArgs;
         this.generatorNumber = generatorNumber;
-        //thi
     }
 
     public String getResourceGroovy()
@@ -295,6 +295,17 @@ public class LoadGeneratorBuilder
         this.alpnVersion = alpnVersion;
     }
 
+    public int getThreadsNumber()
+    {
+        return threadsNumber;
+    }
+
+    @DataBoundSetter
+    public void setThreadsNumber( int threadsNumber )
+    {
+        this.threadsNumber = threadsNumber;
+    }
+
     @Override
     public boolean perform( AbstractBuild build, Launcher launcher, BuildListener listener )
     {
@@ -404,7 +415,7 @@ public class LoadGeneratorBuilder
         Path statsResultFilePath = Paths.get( launcher.getChannel() //
                                                   .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate() ) );
 
-        List<String> args = getArgsProcess( resource, launcher.getComputer(), taskListener, //
+        ArgumentListBuilder args = getArgsProcess( resource, launcher.getComputer(), taskListener, //
                                             run, statsResultFilePath.toString() );
 
         String monitorUrl = getMonitorUrl( taskListener, run );
@@ -417,10 +428,12 @@ public class LoadGeneratorBuilder
             alpnBootVersion = "N/A";
         }
 
+        LOGGER.info( "load generator args:" + args.toString() );
+
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
                                                      this.jdkName, getCurrentNode( launcher.getComputer() ), //
                                                      nodeListeners, loadGeneratorListeners, //
-                                                     args, getJvmExtraArgs(), //
+                                                     args.toList(), getJvmExtraArgs(), //
                                                      alpnBootVersion, //
                                                      AlpnBootVersions.getInstance().getJdkVersionAlpnBootVersion() );
 
@@ -578,7 +591,7 @@ public class LoadGeneratorBuilder
         Files.deleteIfExists( responseTimeResultFile );
     }
 
-    protected List<String> getArgsProcess( Resource resource, Computer computer, TaskListener taskListener,
+    protected ArgumentListBuilder getArgsProcess( Resource resource, Computer computer, TaskListener taskListener,
                                            Run<?, ?> run, String statsResultFilePath )
         throws Exception
     {
@@ -594,25 +607,26 @@ public class LoadGeneratorBuilder
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
-        cmdLine.add( "-rjp" ).add( tmpFilePath ) //
-            .add( "-h" ).add( expandTokens( taskListener, host, run ) ) //
-            .add( "-p" ).add( expandTokens( taskListener, port, run ) ) //
+        cmdLine.add( "--resource-json-path" ).add( tmpFilePath ) //
+            .add( "--host" ).add( expandTokens( taskListener, host, run ) ) //
+            .add( "--port" ).add( expandTokens( taskListener, port, run ) ) //
             .add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) ) //
-            .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
-            .add( "-rr" ).add( expandTokens( taskListener, resourceRate, run ) ) //
-            .add( "-sf" ).add( statsResultFilePath ) //
+            .add( "--users" ).add( expandTokens( taskListener, users, run ) ) //
+            .add( "--resource-rate" ).add( expandTokens( taskListener, resourceRate, run ) ) //
+            .add( "--stats-file" ).add( statsResultFilePath ) //
+            .add( "--threads" ).add( threadsNumber < 1 ? 1 : threadsNumber ) //
             .add( "--scheme" ).add( isSecureProtocol() ? "https" : "http" );
 
         int iterationRuns = NumberUtils.toInt( expandTokens( taskListener, runIteration, run ), 0 );
 
         if ( iterationRuns > 0 )
         {
-            cmdLine.add( "-i" ).add( Integer.toString( iterationRuns ) );
+            cmdLine.add( "--iterations" ).add( Integer.toString( iterationRuns ) );
         }
         else
         {
-            cmdLine.add( "-rt" ).add( expandTokens( taskListener, runningTime, run ) );
-            cmdLine.add( "-rtu" );
+            cmdLine.add( "--running-time" ).add( expandTokens( taskListener, runningTime, run ) );
+            cmdLine.add( "--running-time-unit" );
             switch ( this.runningTimeUnit )
             {
                 case HOURS:
@@ -637,13 +651,14 @@ public class LoadGeneratorBuilder
 
         if ( warmupNumber > 0 )
         {
-            cmdLine.add( "-wn" ).add( warmupNumber );
+            cmdLine.add( "--warmup-iterations" ).add( warmupNumber );
         }
 
         // FIXME deleting tmp file
         // getCurrentNode().getChannel().call( new DeleteTmpFile( tmpFilePath ) );
         LOGGER.debug( "finish" );
-        return cmdLine.toList();
+        LOGGER.info( "load generator starter args:" + cmdLine.toString() );
+        return cmdLine;
 
     }
 

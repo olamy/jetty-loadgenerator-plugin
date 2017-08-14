@@ -22,6 +22,9 @@
   <f:entry title="${%Running Time}" field="runningTime">
     <f:textbox />
   </f:entry>
+  <f:entry title="${%Threads Number}" field="threadsNumber">
+    <f:textbox />
+  </f:entry>
   <f:entry title="${%Warmup Number}" field="warmupNumber">
     <f:textbox />
   </f:entry>

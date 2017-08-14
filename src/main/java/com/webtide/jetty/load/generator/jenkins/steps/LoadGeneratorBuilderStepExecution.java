@@ -65,7 +65,8 @@ public class LoadGeneratorBuilderStepExecution
                                                                  loadGeneratorBuilderStep.getTransport(), //
                                                                  loadGeneratorBuilderStep.isSecureProtocol(), //
                                                                  loadGeneratorBuilderStep.getJvmExtraArgs(), //
-                                                                 Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ) );
+                                                                 Integer.toString( loadGeneratorBuilderStep.getGeneratorNumber() ), //
+                                                                 loadGeneratorBuilderStep.getThreadsNumber());
 
         builder.setJdkName( loadGeneratorBuilderStep.getJdkName() );
         builder.setWarmupNumber( Integer.toString( loadGeneratorBuilderStep.getWarmupNumber() ) );
