@@ -596,21 +596,20 @@ public class LoadGeneratorBuilder
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
 
-        cmdLine.add( "-pjp" ).add( tmpFilePath ) //
+        cmdLine.add( "-rjp" ).add( tmpFilePath ) //
             .add( "-h" ).add( expandTokens( taskListener, host, run ) ) //
             .add( "-p" ).add( expandTokens( taskListener, port, run ) ) //
             .add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) ) //
             .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
-            .add( "-tr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
-            .add( "-stf" ).add( statsResultFilePath ) //
-            //.add( "-css" ) //
+            .add( "-rr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
+            .add( "-sf" ).add( statsResultFilePath ) //
             .add( "--scheme" ).add( isSecureProtocol()? "https" : "http" );
 
         int iterationRuns = NumberUtils.toInt( expandTokens( taskListener, runIteration, run), 0 );
 
         if ( iterationRuns > 0 )
         {
-            cmdLine.add( "-ri" ).add( Integer.toString( iterationRuns ) );
+            cmdLine.add( "-i" ).add( Integer.toString( iterationRuns ) );
         }
         else
         {
