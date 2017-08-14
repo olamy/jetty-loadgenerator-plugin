@@ -7,16 +7,16 @@
   <f:entry title="${%Port}" field="port">
     <f:textbox/>
   </f:entry>
-  <f:entry title="${%Transaction Rate}" field="transactionRate">
+  <f:entry title="${%Resource Rate}" field="resourceRate">
     <f:textbox/>
   </f:entry>
   <f:entry title="${%Users}" field="users">
     <f:textbox/>
   </f:entry>
-  <f:entry title="${%Profile Groovy}" field="profileGroovy">
+  <f:entry title="${%Resource Groovy}" field="profileGroovy">
     <f:expandableTextbox />
   </f:entry>
-  <f:entry title="${%Profile From Path}" field="profileFromFile">
+  <f:entry title="${%Resource From Path}" field="profileFromFile">
     <f:textbox/>
   </f:entry>
   <f:entry title="${%Running Time}" field="runningTime">

@@ -54,7 +54,6 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -113,7 +112,7 @@ public class LoadGeneratorBuilder
 
     private final String runIteration;
 
-    private final String transactionRate;
+    private final String resourceRate;
 
     private List<Resource.NodeListener> nodeListeners = new ArrayList<>();
 
@@ -133,10 +132,12 @@ public class LoadGeneratorBuilder
 
     private String alpnVersion;
 
+    private int threadsNumber = 1;
+
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
     public LoadGeneratorBuilder( String profileGroovy, String host, String port, String users, String profileFromFile,
-                                 String runningTime, TimeUnit runningTimeUnit, String runIteration, String transactionRate,
+                                 String runningTime, TimeUnit runningTimeUnit, String runIteration, String resourceRate,
                                  LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol )
     {
         this.profileGroovy = Util.fixEmptyAndTrim( profileGroovy );
@@ -147,18 +148,20 @@ public class LoadGeneratorBuilder
         this.runningTime = runningTime;
         this.runningTimeUnit = runningTimeUnit == null ? TimeUnit.SECONDS : runningTimeUnit;
         this.runIteration = runIteration;
-        this.transactionRate = StringUtils.isEmpty( transactionRate ) ? "1" : transactionRate;
+        this.resourceRate = StringUtils.isEmpty( resourceRate ) ? "1" : resourceRate;
         this.transport = transport;
         this.secureProtocol = secureProtocol;
     }
 
     public LoadGeneratorBuilder( Resource resource, String host, String port, String users, //
-                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit, String runIteration, //
-                                 String transactionRate, LoadGeneratorStarterArgs.Transport transport, boolean secureProtocol, //
-                                 String jvmExtraArgs, String generatorNumber)
+                                 String profileFromFile, String runningTime, TimeUnit runningTimeUnit,
+                                 String runIteration,//
+                                 String resourceRate, LoadGeneratorStarterArgs.Transport transport,
+                                 boolean secureProtocol,//
+                                 String jvmExtraArgs, String generatorNumber )
     {
 
-        this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, transactionRate,
+        this( null, host, port, users, profileFromFile, runningTime, runningTimeUnit, runIteration, resourceRate,
               transport, secureProtocol );
         this.loadResource = resource;
         this.jvmExtraArgs = jvmExtraArgs;
@@ -210,9 +213,9 @@ public class LoadGeneratorBuilder
         this.nodeListeners.add( nodeListener );
     }
 
-    public String getTransactionRate()
+    public String getResourceRate()
     {
-        return transactionRate;
+        return resourceRate;
     }
 
     public Resource getLoadResource()
@@ -328,8 +331,7 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-        Resource resource =
-            this.loadResource == null ? loadResource( workspace ) : this.loadResource;
+        Resource resource = this.loadResource == null ? loadResource( workspace ) : this.loadResource;
 
         if ( resource == null )
         {
@@ -346,7 +348,7 @@ public class LoadGeneratorBuilder
     /**
      * Expand tokens with token macro and build variables
      */
-    protected static String expandTokens( TaskListener listener, String str, Run<?,?> run )
+    protected static String expandTokens( TaskListener listener, String str, Run<?, ?> run )
         throws Exception
     {
         if ( str == null )
@@ -356,11 +358,9 @@ public class LoadGeneratorBuilder
         try
         {
             Class<?> clazz = Class.forName( "org.jenkinsci.plugins.tokenmacro.TokenMacro" );
-            Method expandMethod = ReflectionUtils.findMethod( clazz, "expand",
-                                                              new Class[]{
-                                                                  AbstractBuild.class, //
-                                                                  TaskListener.class, //
-                                                                  String.class } );
+            Method expandMethod = ReflectionUtils.findMethod( clazz, "expand", new Class[]{ AbstractBuild.class, //
+                TaskListener.class, //
+                String.class } );
             return (String) expandMethod.invoke( null, run, listener, str );
             //opts = TokenMacro.expand(this, listener, opts);
         }
@@ -375,8 +375,7 @@ public class LoadGeneratorBuilder
             LOGGER.trace( "Ignore problem in expanding tokens", linkageError );
         }
 
-
-        str = StrSubstitutor.replace( str, run.getEnvironment(listener) );
+        str = StrSubstitutor.replace( str, run.getEnvironment( listener ) );
 
         return str;
     }
@@ -387,46 +386,44 @@ public class LoadGeneratorBuilder
         throws Exception
     {
 
-
         // -------------------------
         // listeners to get data files
         // -------------------------
         List<Resource.NodeListener> nodeListeners = new ArrayList<>();
 
         Path resultFilePath = Paths.get( launcher.getChannel() //
-                                             .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
+                                             .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate() ) );
 
         ValuesFileWriter valuesFileWriter = new ValuesFileWriter( resultFilePath );
         nodeListeners.add( valuesFileWriter );
 
-        List<LoadGenerator.Listener> loadGeneratorListeners = new ArrayList<>(  );
+        List<LoadGenerator.Listener> loadGeneratorListeners = new ArrayList<>();
         loadGeneratorListeners.add( valuesFileWriter );
 
         Path statsResultFilePath = Paths.get( launcher.getChannel() //
-                                                   .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate()) );
+                                                  .call( new LoadGeneratorProcessFactory.RemoteTmpFileCreate() ) );
 
         List<String> args = getArgsProcess( resource, launcher.getComputer(), taskListener, //
-                                            run, statsResultFilePath.toString()  );
+                                            run, statsResultFilePath.toString() );
 
         String monitorUrl = getMonitorUrl( taskListener, run );
 
         String alpnBootVersion = getAlpnVersion();
         // well a quick marker to say we do not need alpn
-        if(getTransport() == LoadGeneratorStarterArgs.Transport.HTTP //
-            || getTransport() == LoadGeneratorStarterArgs.Transport.HTTPS)
+        if ( getTransport() == LoadGeneratorStarterArgs.Transport.HTTP //
+            || getTransport() == LoadGeneratorStarterArgs.Transport.HTTPS )
         {
             alpnBootVersion = "N/A";
         }
 
         new LoadGeneratorProcessRunner().runProcess( taskListener, workspace, launcher, //
-                                                     this.jdkName, getCurrentNode(launcher.getComputer()), //
+                                                     this.jdkName, getCurrentNode( launcher.getComputer() ), //
                                                      nodeListeners, loadGeneratorListeners, //
                                                      args, getJvmExtraArgs(), //
                                                      alpnBootVersion, //
-                                                     AlpnBootVersions.getInstance().getJdkVersionAlpnBootVersion());
+                                                     AlpnBootVersions.getInstance().getJdkVersionAlpnBootVersion() );
 
         String stats = workspace.child( statsResultFilePath.toString() ).readToString();
-
 
         TimePerPathListener timePerPathListener = new TimePerPathListener( false );
         GlobalSummaryListener globalSummaryListener = new GlobalSummaryListener();
@@ -458,13 +455,12 @@ public class LoadGeneratorBuilder
         //-------------------------------------------------
         // time values
         //-------------------------------------------------
-        parseTimeValues( workspace, resultFilePath, nodeListeners);
-
+        parseTimeValues( workspace, resultFilePath, nodeListeners );
 
         //-------------------------------------------------
         // Monitor values
         //-------------------------------------------------
-        String monitorJson = getMonitorValues(monitorUrl, taskListener);
+        String monitorJson = getMonitorValues( monitorUrl, taskListener );
 
         taskListener.getLogger().print( "monitorJson: " + monitorJson );
 
@@ -482,9 +478,9 @@ public class LoadGeneratorBuilder
         }
         // manage results
 
-        SummaryReport summaryReport = new SummaryReport(run.getId());
+        SummaryReport summaryReport = new SummaryReport( run.getId() );
 
-        timePerPathListener.getResponseTimePerPath().entrySet().stream().forEach( entry ->  {
+        timePerPathListener.getResponseTimePerPath().entrySet().stream().forEach( entry -> {
             String path = entry.getKey();
             Histogram histogram = entry.getValue();
 
@@ -494,7 +490,8 @@ public class LoadGeneratorBuilder
                           TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                           number.get() );
             summaryReport.addResponseTimeInformations( path, new CollectorInformations( histogram, //
-                                                                                        TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ) );
+                                                                                        TimeUnit.NANOSECONDS,
+                                                                                        TimeUnit.MILLISECONDS ) );
         } );
 
         timePerPathListener.getLatencyTimePerPath().entrySet().stream().forEach( entry -> {
@@ -507,7 +504,8 @@ public class LoadGeneratorBuilder
                           TimeUnit.NANOSECONDS.toMillis( Math.round( histogram.getMean() ) ), //
                           number.get() );
             summaryReport.addLatencyTimeInformations( path, new CollectorInformations( histogram, //
-                                                                                       TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ) );
+                                                                                       TimeUnit.NANOSECONDS,
+                                                                                       TimeUnit.MILLISECONDS ) );
         } );
 
         // FIXME calculate score from previous build
@@ -527,24 +525,23 @@ public class LoadGeneratorBuilder
                                                          entry.getHttpStatus() ) );
         } );
 
-
         run.addAction( new LoadGeneratorBuildAction( healthReport, //
                                                      summaryReport, //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getResponseTimeHistogram().getIntervalHistogram(), //
+                                                         globalSummaryListener.getResponseTimeHistogram().getIntervalHistogram(),
+                                                         //
                                                          TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ), //
                                                      new CollectorInformations(
-                                                         globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram(), //
+                                                         globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram(),
+                                                         //
                                                          TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ), //
                                                      allResponseInfoTimePerPath, run, monitoringResultMap, stats ) );
 
         // cleanup
 
-        getCurrentNode(launcher.getComputer()) //
+        getCurrentNode( launcher.getComputer() ) //
             .getChannel() //
             .call( new LoadGeneratorProcessFactory.DeleteTmpFile( resultFilePath.toString() ) );
-
-
 
         LOGGER.info( "LoadGenerator end" );
     }
@@ -555,43 +552,43 @@ public class LoadGeneratorBuilder
     {
         Path responseTimeResultFile = Files.createTempFile( "loadgenerator_result_responsetime", ".csv" );
 
-        workspace.child( responseTimeResultFilePath.toString() ).copyTo( Files.newOutputStream( responseTimeResultFile ) );
+        workspace.child( responseTimeResultFilePath.toString() ).copyTo(
+            Files.newOutputStream( responseTimeResultFile ) );
 
-        CSVParser csvParser = new CSVParser( Files.newBufferedReader( responseTimeResultFile ), CSVFormat.newFormat( '|' ) );
+        CSVParser csvParser =
+            new CSVParser( Files.newBufferedReader( responseTimeResultFile ), CSVFormat.newFormat( '|' ) );
 
-        csvParser.forEach(
-            strings ->
+        csvParser.forEach( strings -> {
+            Values values = new Values() //
+                .eventTimestamp( Long.parseLong( strings.get( 0 ) ) ) //
+                .method( strings.get( 1 ) ) //
+                .path( strings.get( 2 ) ) //
+                .status( Integer.parseInt( strings.get( 3 ) ) ) //
+                .size( Long.parseLong( strings.get( 4 ) ) ) //
+                .responseTime( Long.parseLong( strings.get( 5 ) ) ) //
+                .latencyTime( Long.parseLong( strings.get( 6 ) ) );
+
+            for ( Resource.NodeListener listener : nodeListeners )
             {
-                Values values = new Values() //
-                    .eventTimestamp( Long.parseLong( strings.get( 0 ) )) //
-                    .method( strings.get( 1 ) ) //
-                    .path( strings.get( 2 ) ) //
-                    .status( Integer.parseInt( strings.get( 3 ) ) ) //
-                    .size( Long.parseLong( strings.get( 4 ) ) ) //
-                    .responseTime( Long.parseLong( strings.get( 5 ) ) ) //
-                    .latencyTime( Long.parseLong( strings.get( 6 ) ) );
-
-                for (Resource.NodeListener listener : nodeListeners)
-                {
-                    listener.onResourceNode( values.getInfo() );
-                }
-            } );
+                listener.onResourceNode( values.getInfo() );
+            }
+        } );
 
         Files.deleteIfExists( responseTimeResultFile );
     }
 
-    protected List<String> getArgsProcess( Resource resource, Computer computer,
-                                           TaskListener taskListener, Run<?,?> run, String statsResultFilePath)
+    protected List<String> getArgsProcess( Resource resource, Computer computer, TaskListener taskListener,
+                                           Run<?, ?> run, String statsResultFilePath )
         throws Exception
     {
 
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false );
-        StringWriter stringWriter = new StringWriter(  );
+        StringWriter stringWriter = new StringWriter();
         objectMapper.writeValue( stringWriter, resource );
         stringWriter.close();
 
-        final String tmpFilePath = getCurrentNode(computer) //
+        final String tmpFilePath = getCurrentNode( computer ) //
             .getChannel().call( new CopyResource( stringWriter.toString() ) );
 
         ArgumentListBuilder cmdLine = new ArgumentListBuilder();
@@ -601,11 +598,11 @@ public class LoadGeneratorBuilder
             .add( "-p" ).add( expandTokens( taskListener, port, run ) ) //
             .add( "--transport" ).add( StringUtils.lowerCase( this.getTransport().toString() ) ) //
             .add( "-u" ).add( expandTokens( taskListener, users, run ) ) //
-            .add( "-rr" ).add( expandTokens( taskListener, transactionRate, run ) ) //
+            .add( "-rr" ).add( expandTokens( taskListener, resourceRate, run ) ) //
             .add( "-sf" ).add( statsResultFilePath ) //
-            .add( "--scheme" ).add( isSecureProtocol()? "https" : "http" );
+            .add( "--scheme" ).add( isSecureProtocol() ? "https" : "http" );
 
-        int iterationRuns = NumberUtils.toInt( expandTokens( taskListener, runIteration, run), 0 );
+        int iterationRuns = NumberUtils.toInt( expandTokens( taskListener, runIteration, run ), 0 );
 
         if ( iterationRuns > 0 )
         {
@@ -637,7 +634,7 @@ public class LoadGeneratorBuilder
         int warmupNumber = StringUtils.isNotEmpty( getWarmupNumber() ) ? //
             Integer.parseInt( expandTokens( taskListener, this.getWarmupNumber(), run ) ) : -1;
 
-        if (warmupNumber > 0)
+        if ( warmupNumber > 0 )
         {
             cmdLine.add( "-wn" ).add( warmupNumber );
         }
@@ -676,7 +673,7 @@ public class LoadGeneratorBuilder
         }
         catch ( Exception e )
         {
-            taskListener.getLogger().println( "error calling stats monitorUrl:" + monitorUrl + "," + e.getMessage());
+            taskListener.getLogger().println( "error calling stats monitorUrl:" + monitorUrl + "," + e.getMessage() );
             e.printStackTrace();
             return "";
         }
@@ -719,7 +716,7 @@ public class LoadGeneratorBuilder
 
         String profileFromPath = getProfileFromFile();
 
-        if (StringUtils.isBlank( groovy ) && StringUtils.isNotBlank( profileFromPath ))
+        if ( StringUtils.isBlank( groovy ) && StringUtils.isNotBlank( profileFromPath ) )
         {
             FilePath profileGroovyFilePath = workspace.child( profileFromPath );
             groovy = IOUtils.toString( profileGroovyFilePath.read() );
@@ -745,18 +742,17 @@ public class LoadGeneratorBuilder
     }
 
 
-
-
     protected Node getCurrentNode( Computer computer )
     {
         Node node = null;
         // well avoid NPE when running workflow testing
         //return Executor.currentExecutor().getOwner().getNode();
-        if (Computer.currentComputer() != null)
+        if ( Computer.currentComputer() != null )
         {
             node = Computer.currentComputer().getNode();
         }
-        if (node == null) {
+        if ( node == null )
+        {
             node = computer.getNode();
         }
         return node;
@@ -781,10 +777,11 @@ public class LoadGeneratorBuilder
                                                                         TimeUnit.SECONDS, //
                                                                         TimeUnit.MILLISECONDS );
 
-        private static final List<LoadGeneratorStarterArgs.Transport> TRANSPORTS = Arrays.asList( LoadGeneratorStarterArgs.Transport.HTTP,//
-                                                                                                  LoadGeneratorStarterArgs.Transport.HTTPS,//
-                                                                                                  LoadGeneratorStarterArgs.Transport.H2,//
-                                                                                                  LoadGeneratorStarterArgs.Transport.H2C );
+        private static final List<LoadGeneratorStarterArgs.Transport> TRANSPORTS =
+            Arrays.asList( LoadGeneratorStarterArgs.Transport.HTTP,//
+                           LoadGeneratorStarterArgs.Transport.HTTPS,//
+                           LoadGeneratorStarterArgs.Transport.H2,//
+                           LoadGeneratorStarterArgs.Transport.H2C );
 
         /**
          * This human readable name is used in the configuration screen.

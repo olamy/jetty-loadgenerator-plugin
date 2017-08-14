@@ -59,6 +59,7 @@
       </script>
   </div>
 
+  <!--
   <div class="graph-container floating-box-gc-usage-family" align="right">
     <div id="load_generator_gc_usage_trend" class="graph" style="width: 85%;height: 170px">
     </div>
@@ -89,6 +90,7 @@
     </script>
 
   </div>
+  -->
 
   <div class="graph-container floating-box-response-status-family" align="right" >
       <div id="load_generator_response_status_trend" class="graph" style="width: 85%;height: 170px">
