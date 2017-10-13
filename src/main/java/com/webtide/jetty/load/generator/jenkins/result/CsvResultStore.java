@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -45,6 +46,11 @@ public class CsvResultStore
     public CsvResultStore( String fileName )
     {
         this.fileName = fileName;
+        initStoreFile( this.fileName );
+    }
+
+    protected void initStoreFile( String fileName )
+    {
         // create the file if not exists
         this.csvFile = new File( ResultStoreManagement.getStoreDirectory().toFile(), fileName );
         if ( !Files.exists( this.csvFile.toPath() ) )
@@ -97,6 +103,10 @@ public class CsvResultStore
     private void writeStrings( String[] values )
         throws IOException
     {
+        if ( this.csvFile == null )
+        {
+            initStoreFile( this.fileName );
+        }
         try (CSVWriter writer = new CSVWriter( new FileWriter( this.csvFile, true ), ';',
                                                CSVWriter.DEFAULT_QUOTE_CHARACTER, CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                                                CSVWriter.DEFAULT_LINE_END ))
@@ -162,7 +172,7 @@ public class CsvResultStore
     @Override
     public void remove( ExtendedLoadResult loadResult )
     {
-
+        // not supported
     }
 
     @Override
@@ -175,12 +185,25 @@ public class CsvResultStore
     @Override
     public List<ExtendedLoadResult> findAll()
     {
+        return findWithFilters( null );
+    }
+
+    public List<ExtendedLoadResult> findWithFilters( List<Predicate<String[]>> predicates )
+    {
         lock.lock();
         try (CSVReader reader = new CSVReader( new FileReader( "yourfile.csv" ) ))
         {
 
-            return Stream.generate( reader.iterator()::next ) //
-                .map( strings -> fromCsv( strings ) ) //
+            Stream<String[]> stream = Stream.generate( reader.iterator()::next );
+
+            if ( predicates != null )
+            {
+                for ( Predicate predicate : predicates )
+                {
+                    stream = stream.filter( predicate );
+                }
+            }
+            return stream.map( strings -> fromCsv( strings ) ) //
                 .collect( Collectors.toList() );
 
         }
@@ -194,6 +217,5 @@ public class CsvResultStore
             lock.unlock();
         }
     }
-
 
 }
