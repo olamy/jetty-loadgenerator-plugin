@@ -1,0 +1,14 @@
+<!--
+
+-->
+
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+		 xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:cf="/lib/configfiles">
+	<l:layout permission="${app.ADMINISTER}" norefresh="true">
+		<st:include page="sidepanel.jelly" it="${app}"/>
+		<l:main-panel>
+		Result Store Management
+		</l:main-panel>
+	</l:layout>
+</j:jelly>
