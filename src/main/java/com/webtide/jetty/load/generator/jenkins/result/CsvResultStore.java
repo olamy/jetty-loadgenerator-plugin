@@ -61,7 +61,7 @@ public class CsvResultStore
                 // write csv headers
                 writeStrings( new String[]{ "uuid", "processors", "jettyVersion", "memory", //
                     "minValue", "meanValue", "maxValue", "total", "start", "end", "value50", //
-                    "value90", "stdDeviation" } );
+                    "value90", "stdDeviation", "comment" } );
             }
             catch ( IOException e )
             {
@@ -141,7 +141,7 @@ public class CsvResultStore
         return new String[]{ uuid, String.valueOf( processors ), jettyVersion, String.valueOf( memory ), //
             String.valueOf( minValue ), String.valueOf( meanValue ), String.valueOf( maxValue ), //
             String.valueOf( total ), String.valueOf( start ), String.valueOf( end ), String.valueOf( value50 ), //
-            String.valueOf( value90 ), String.valueOf( stdDeviation ) };
+            String.valueOf( value90 ), String.valueOf( stdDeviation ), loadResult.getComment() };
 
 
     }
@@ -166,7 +166,11 @@ public class CsvResultStore
         collectorInformations.setValue90( Long.valueOf( values[11] ) );
         collectorInformations.setStdDeviation( Double.valueOf( values[12] ) );
 
-        return new ExtendedLoadResult( values[0], new LoadResult( serverInfo, collectorInformations ) );
+        ExtendedLoadResult extendedLoadResult =
+            new ExtendedLoadResult( values[0], new LoadResult( serverInfo, collectorInformations ) );
+
+        extendedLoadResult.setComment( values[13] );
+        return extendedLoadResult;
     }
 
     @Override

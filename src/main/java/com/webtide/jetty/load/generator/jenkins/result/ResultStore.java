@@ -115,6 +115,8 @@ public interface ResultStore
 
         private String uuid;
 
+        private String comment;
+
         public ExtendedLoadResult()
         {
             // no op
@@ -136,10 +138,21 @@ public interface ResultStore
             return uuid;
         }
 
+        public String getComment()
+        {
+            return comment;
+        }
+
+        public void setComment( String comment )
+        {
+            this.comment = comment;
+        }
+
         @Override
         public String toString()
         {
-            return "ExtendedLoadResult{" + "uuid='" + uuid + '\'' + '}' + super.toString();
+            return "ExtendedLoadResult{" + "uuid='" + uuid + '\'' + ", comment='" + comment + '\'' + '}'
+                + super.toString();
         }
     }
 
