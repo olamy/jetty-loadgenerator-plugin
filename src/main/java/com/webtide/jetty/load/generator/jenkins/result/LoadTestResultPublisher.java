@@ -22,7 +22,6 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
-import hudson.model.Executor;
 import hudson.model.HealthReport;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -30,7 +29,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
-import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
@@ -48,6 +46,9 @@ public class LoadTestResultPublisher
 {
 
     private final String resultFilePath;
+
+    //@Inject
+    //private ResultStoreManagement resultStoreManagement;
 
     @DataBoundConstructor
     public LoadTestResultPublisher( String resultFilePath )
@@ -80,14 +81,10 @@ public class LoadTestResultPublisher
             HealthReport healthReport = new HealthReport( 30, "text" );
 
             run.addAction( new LoadTestdResultBuildAction( healthReport, loadResult, run ) );
+            //boolean master = Executor.currentExecutor().getOwner().getNode() == Jenkins.getInstance();
 
-            boolean master = Executor.currentExecutor().getOwner().getNode() == Jenkins.getInstance();
-
-            ResultStoreManagement resultStoreManagement = //
-                Jenkins.getInstance().getExtensionList( ResultStoreManagement.class ).get( 0 );
-
-            ResultStore resultStore = resultStoreManagement.getResultStore();
-            resultStore.save( loadResult );
+            //ResultStore resultStore =  resultStoreManagement.getResultStore();
+            //resultStore.save( loadResult );
 
         }
     }
