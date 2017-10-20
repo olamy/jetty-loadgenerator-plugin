@@ -26,6 +26,7 @@
     <jetty.version>9.4.6.v20170531</jetty.version>
     <loadgenerator.debugPort>-1</loadgenerator.debugPort>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <loadgenerator.version>1.0.0-SNAPSHOT</loadgenerator.version>
   </properties>
 
   <scm>
@@ -51,7 +52,7 @@
     <dependency>
       <groupId>org.mortbay.jetty.loadgenerator</groupId>
       <artifactId>jetty-load-generator-client</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>${loadgenerator.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.codehaus.groovy</groupId>
@@ -62,7 +63,7 @@
     <dependency>
       <groupId>org.mortbay.jetty.loadgenerator</groupId>
       <artifactId>jetty-load-generator-starter</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <version>${loadgenerator.version}</version>
       <classifier>uber</classifier>
       <exclusions>
         <exclusion>
@@ -72,20 +73,15 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.opencsv</groupId>
-      <artifactId>opencsv</artifactId>
-      <version>4.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <version>5.6.3</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-      <version>5.6.3</version>
+      <groupId>org.mortbay.jetty.loadgenerator</groupId>
+      <artifactId>jetty-load-generator-store</artifactId>
+      <version>${loadgenerator.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.groovy</groupId>
+          <artifactId>groovy</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -17,8 +17,6 @@
 
 package com.webtide.jetty.load.generator.jenkins.result;
 
-import com.webtide.jetty.load.generator.jenkins.cometd.CometdProjectAction;
-import com.webtide.jetty.load.generator.jenkins.cometd.beans.LoadResults;
 import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
@@ -40,7 +38,7 @@ public class LoadTestdResultBuildAction
     implements HealthReportingAction, SimpleBuildStep.LastBuildAction, RunAction2
 {
 
-    private final LoadResult loadResult;
+    private final String loadResultId;
 
     private final HealthReport healthReport;
 
@@ -50,9 +48,9 @@ public class LoadTestdResultBuildAction
 
     private transient RunList<?> builds;
 
-    public LoadTestdResultBuildAction( HealthReport healthReport, LoadResult loadResult, Run<?, ?> run )
+    public LoadTestdResultBuildAction( HealthReport healthReport, String loadResultId, Run<?, ?> run )
     {
-        this.loadResult = loadResult;
+        this.loadResultId = loadResultId;
         this.healthReport = healthReport;
         this.buildId = run.getId();
         this.jobName = run.getParent().getName();
@@ -64,9 +62,9 @@ public class LoadTestdResultBuildAction
         return null;
     }
 
-    public LoadResult getLoadResult()
+    public String getLoadResultId()
     {
-        return loadResult;
+        return loadResultId;
     }
 
     @Override

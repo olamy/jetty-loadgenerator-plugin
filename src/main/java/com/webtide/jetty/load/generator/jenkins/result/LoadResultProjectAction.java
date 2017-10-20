@@ -17,9 +17,7 @@
 
 package com.webtide.jetty.load.generator.jenkins.result;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.webtide.jetty.load.generator.jenkins.PluginConstants;
-import com.webtide.jetty.load.generator.jenkins.cometd.CometdResultBuildAction;
 import com.webtide.jetty.load.generator.jenkins.cometd.beans.LoadResults;
 import hudson.model.Actionable;
 import hudson.model.ProminentProjectAction;
@@ -33,12 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  *
@@ -71,7 +63,6 @@ public class LoadResultProjectAction
     public void doTitles( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
     {
-
 
     }
 
@@ -108,7 +99,7 @@ public class LoadResultProjectAction
 
         public BuildLoadResult( String buildId, LoadResult loadResult )
         {
-            super(loadResult.getServerInfo(), loadResult.getCollectorInformations());
+            super( loadResult.getServerInfo(), loadResult.getCollectorInformations(), loadResult.getLoadConfig() );
             this.buildId = buildId;
             this.loadResults = loadResults;
         }
