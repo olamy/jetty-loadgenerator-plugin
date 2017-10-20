@@ -206,6 +206,13 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.jenkins-ci.tools</groupId>
+          <artifactId>maven-hpi-plugin</artifactId>
+          <configuration>
+            <pluginFirstClassLoader>true</pluginFirstClassLoader>
+          </configuration>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.6.0</version>
