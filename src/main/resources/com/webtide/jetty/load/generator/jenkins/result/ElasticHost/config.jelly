@@ -1,0 +1,30 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="Elastic Instance name" field="elasticHostName">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Elastic Host" field="elasticHost">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Elastic Port" field="elasticPort">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="${%Scheme}">
+    <select class="setting-input" name="elasticScheme">
+      <j:forEach var="s" items="${descriptor.schemes}">
+        <f:option selected="${s==instance.elasticScheme}">${s}</f:option>
+      </j:forEach>
+    </select>
+  </f:entry>
+  <f:entry title="Elastic User" field="elasticUsername">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Elastic Password" field="elasticPassword">
+    <f:password />
+  </f:entry>
+  <f:entry title="">
+    <div align="right">
+      <f:repeatableDeleteButton />
+    </div>
+  </f:entry>
+</j:jelly>

@@ -59,49 +59,39 @@ public class LoadTestResultPublisher
 
     private final String resultFilePath;
 
-    private String elasticHost, elasticScheme = "http", elasticUsername, elasticPassword;
-
-    private int elasticPort;
+    private String elasticHostName;
 
     private transient ResultStore resultStore;
 
     @DataBoundConstructor
-    public LoadTestResultPublisher( String resultFilePath, String elasticHost, String elasticScheme,
-                                    String elasticUsername, String elasticPassword, int elasticPort )
+    public LoadTestResultPublisher( String resultFilePath, String elasticHostName )
     {
         this.resultFilePath = resultFilePath;
-        this.elasticHost = elasticHost;
-        this.elasticScheme = elasticScheme;
-        this.elasticUsername = elasticUsername;
-        this.elasticPassword = elasticPassword;
-        this.elasticPort = elasticPort;
-
-        initializeResultStore();
-
+        this.elasticHostName = elasticHostName;
     }
 
-    public ResultStore getResultStore()
+    public ResultStore getResultStore( ElasticHost elasticHost )
     {
         if ( this.resultStore != null )
         {
             return this.resultStore;
         }
-        initializeResultStore();
+        initializeResultStore( elasticHost );
         return this.resultStore;
 
     }
 
-    private void initializeResultStore()
+    private void initializeResultStore( ElasticHost elasticHost )
     {
-        if ( StringUtils.isNotEmpty( this.elasticHost ) )
+        if ( elasticHost != null && StringUtils.isNotEmpty( elasticHost.getElasticHost() ) )
         {
             this.resultStore = new ElasticResultStore();
             Map<String, String> setupData = new HashMap<>();
-            setupData.put( ElasticResultStore.HOST_KEY, this.elasticHost );
-            setupData.put( ElasticResultStore.PORT_KEY, Integer.toString( this.elasticPort ) );
-            setupData.put( ElasticResultStore.SCHEME_KEY, this.elasticScheme );
-            setupData.put( ElasticResultStore.USER_KEY, this.elasticUsername );
-            setupData.put( ElasticResultStore.PWD_KEY, this.elasticPassword );
+            setupData.put( ElasticResultStore.HOST_KEY, elasticHost.getElasticHost() );
+            setupData.put( ElasticResultStore.PORT_KEY, Integer.toString( elasticHost.getElasticPort() ) );
+            setupData.put( ElasticResultStore.SCHEME_KEY, elasticHost.getElasticScheme() );
+            setupData.put( ElasticResultStore.USER_KEY, elasticHost.getElasticUsername() );
+            setupData.put( ElasticResultStore.PWD_KEY, elasticHost.getElasticPassword() );
             this.resultStore.initialize( setupData );
         }
         else
@@ -111,59 +101,19 @@ public class LoadTestResultPublisher
         }
     }
 
+    public String getElasticHostName()
+    {
+        return elasticHostName;
+    }
+
+    public void setElasticHostName( String elasticHostName )
+    {
+        this.elasticHostName = elasticHostName;
+    }
+
     public String getResultFilePath()
     {
         return resultFilePath;
-    }
-
-    public String getElasticHost()
-    {
-        return elasticHost;
-    }
-
-    public void setElasticHost( String elasticHost )
-    {
-        this.elasticHost = elasticHost;
-    }
-
-    public String getElasticScheme()
-    {
-        return elasticScheme;
-    }
-
-    public void setElasticScheme( String elasticScheme )
-    {
-        this.elasticScheme = elasticScheme;
-    }
-
-    public String getElasticUsername()
-    {
-        return elasticUsername;
-    }
-
-    public void setElasticUsername( String elasticUsername )
-    {
-        this.elasticUsername = elasticUsername;
-    }
-
-    public String getElasticPassword()
-    {
-        return elasticPassword;
-    }
-
-    public void setElasticPassword( String elasticPassword )
-    {
-        this.elasticPassword = elasticPassword;
-    }
-
-    public int getElasticPort()
-    {
-        return elasticPort;
-    }
-
-    public void setElasticPort( int elasticPort )
-    {
-        this.elasticPort = elasticPort;
     }
 
     @Override
@@ -171,6 +121,9 @@ public class LoadTestResultPublisher
                          @Nonnull TaskListener taskListener )
         throws InterruptedException, IOException
     {
+
+        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+
         FilePath resultFile = filePath.child( getResultFilePath() );
         if ( !resultFile.exists() )
         {
@@ -184,7 +137,9 @@ public class LoadTestResultPublisher
             // FIXME calculate score from previous build
             HealthReport healthReport = new HealthReport( 30, "text" );
 
-            ResultStore.ExtendedLoadResult extendedLoadResult = this.getResultStore().save( loadResult );
+            ResultStore.ExtendedLoadResult extendedLoadResult = this.getResultStore(elasticHost).save( loadResult );
+
+            taskListener.getLogger().println( "Load result stored with id: " + extendedLoadResult.getUuid() );
 
             run.addAction( new LoadTestdResultBuildAction( healthReport, extendedLoadResult.getUuid(), run ) );
         }
@@ -220,9 +175,9 @@ public class LoadTestResultPublisher
             return "Load Test Result Store";
         }
 
-        public List<String> getSchemes()
+        public List<ElasticHost> getElasticHosts()
         {
-            return Arrays.asList( "http", "https" );
+            return ElasticHostProjectProperty.DESCRIPTOR.getElasticHosts();
         }
 
     }

@@ -4,23 +4,11 @@
   <f:entry title="${%resultFilePath}" field="resultFilePath">
     <f:textbox/>
   </f:entry>
-  <f:entry title="${%Host}" field="elasticHost">
-    <f:textbox/>
-  </f:entry>
-  <f:entry title="${%Port}" field="elasticPort">
-    <f:textbox/>
-  </f:entry>
-  <f:entry title="${%Scheme}">
-    <select class="setting-input" name="elasticScheme">
-      <j:forEach var="s" items="${descriptor.schemes}">
-        <f:option selected="${s==instance.elasticScheme}">${s}</f:option>
+  <f:entry title="${%Elastic Host}">
+    <select class="setting-input" name="elasticHostName">
+      <j:forEach var="s" items="${descriptor.elasticHosts}">
+        <f:option selected="${s.elasticHostName==instance.elasticHostName}">${s.elasticHostName}</f:option>
       </j:forEach>
     </select>
-  </f:entry>
-  <f:entry title="${%Username}" field="elasticUsername">
-    <f:textbox/>
-  </f:entry>
-  <f:entry title="${%Password}" field="elasticPassword">
-    <f:textbox/>
   </f:entry>
 </j:jelly>
