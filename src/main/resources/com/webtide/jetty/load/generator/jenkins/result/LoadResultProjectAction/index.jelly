@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
+  <l:layout title="Load Generator">
+    <m:import/>
+    <l:main-panel>
+      <h2>Global Reponse Time Result</h2>
+      <div class="graph-container floating-box-response-time" align="right">
+        <div id="load_result_response_time_trend" class="graph" style="width: 85%;height: 170px">
+        </div>
+        <script type="text/javascript" language="javascript">
+          jQueryLoadGenerator.noConflict();
+          jQueryLoadGenerator.getJSON("responseTimeTrend", function (json) {
+          var grah = Morris.Line({
+          element: 'load_result_response_time_trend',
+          data: json,
+          xkey: 'startTimeStamp',
+          ykeys: ['mean','value50','value90'], // ,'maxValue'
+          labels: ['Mean','Value 50','Value 90'], // , 'Max'
+          resize: true,
+          pointSize: 1,
+          parseTime: false,
+          hideHover: 'auto',
+          dateFormat: function(x) {
+          return x;
+          },
+          xLabelFormat: function(x) {
+          return 'Build #' + x.src.buildId;
+          }
+          });
+          });
+        </script>
+      </div>
+    </l:main-panel>
+  </l:layout>
+
+</j:jelly>

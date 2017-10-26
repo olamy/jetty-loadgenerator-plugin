@@ -7,10 +7,13 @@ import hudson.util.FormValidation;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ElasticHost
@@ -125,6 +128,19 @@ public class ElasticHost
         }
 
         return null;
+    }
+
+    public ElasticResultStore buildElasticResultStore()
+    {
+        ElasticResultStore elasticResultStore = new ElasticResultStore();
+        Map<String, String> setupData = new HashMap<>();
+        setupData.put( ElasticResultStore.HOST_KEY, this.getElasticHost() );
+        setupData.put( ElasticResultStore.PORT_KEY, Integer.toString( this.getElasticPort() ) );
+        setupData.put( ElasticResultStore.SCHEME_KEY, this.getElasticScheme() );
+        setupData.put( ElasticResultStore.USER_KEY, this.getElasticUsername() );
+        setupData.put( ElasticResultStore.PWD_KEY, this.getElasticPassword() );
+        elasticResultStore.initialize( setupData );
+        return elasticResultStore;
     }
 
 

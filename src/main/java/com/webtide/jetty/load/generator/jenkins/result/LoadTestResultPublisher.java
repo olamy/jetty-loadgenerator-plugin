@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,14 +84,7 @@ public class LoadTestResultPublisher
     {
         if ( elasticHost != null && StringUtils.isNotEmpty( elasticHost.getElasticHost() ) )
         {
-            this.resultStore = new ElasticResultStore();
-            Map<String, String> setupData = new HashMap<>();
-            setupData.put( ElasticResultStore.HOST_KEY, elasticHost.getElasticHost() );
-            setupData.put( ElasticResultStore.PORT_KEY, Integer.toString( elasticHost.getElasticPort() ) );
-            setupData.put( ElasticResultStore.SCHEME_KEY, elasticHost.getElasticScheme() );
-            setupData.put( ElasticResultStore.USER_KEY, elasticHost.getElasticUsername() );
-            setupData.put( ElasticResultStore.PWD_KEY, elasticHost.getElasticPassword() );
-            this.resultStore.initialize( setupData );
+            this.resultStore = elasticHost.buildElasticResultStore(  );
         }
         else
         {
@@ -137,11 +129,15 @@ public class LoadTestResultPublisher
             // FIXME calculate score from previous build
             HealthReport healthReport = new HealthReport( 30, "text" );
 
-            ResultStore.ExtendedLoadResult extendedLoadResult = this.getResultStore(elasticHost).save( loadResult );
+            ResultStore.ExtendedLoadResult extendedLoadResult =
+                new ResultStore.ExtendedLoadResult( "jenkins-" + run.getId(), loadResult );
+
+            this.getResultStore( elasticHost ).save( extendedLoadResult );
 
             taskListener.getLogger().println( "Load result stored with id: " + extendedLoadResult.getUuid() );
 
-            run.addAction( new LoadTestdResultBuildAction( healthReport, extendedLoadResult.getUuid(), run ) );
+            run.addAction(
+                new LoadTestdResultBuildAction( healthReport, extendedLoadResult.getUuid(), run, elasticHostName ) );
         }
     }
 
@@ -195,10 +191,9 @@ public class LoadTestResultPublisher
         }
 
         @Override
-        public ExtendedLoadResult save( LoadResult loadResult )
+        public void save( ExtendedLoadResult extendedLoadResult )
         {
             LOGGER.info( "No elastic host defined so results are not stored " );
-            return null;
         }
 
         @Override

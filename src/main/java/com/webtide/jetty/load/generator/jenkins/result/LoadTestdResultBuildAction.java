@@ -25,7 +25,6 @@ import hudson.model.Run;
 import hudson.util.RunList;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
-import org.mortbay.jetty.load.generator.listeners.LoadResult;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,14 +45,18 @@ public class LoadTestdResultBuildAction
 
     private final String jobName;
 
+    private final String elasticHostName;
+
     private transient RunList<?> builds;
 
-    public LoadTestdResultBuildAction( HealthReport healthReport, String loadResultId, Run<?, ?> run )
+    public LoadTestdResultBuildAction( HealthReport healthReport, String loadResultId, Run<?, ?> run,
+                                       String elasticHostName )
     {
         this.loadResultId = loadResultId;
         this.healthReport = healthReport;
         this.buildId = run.getId();
         this.jobName = run.getParent().getName();
+        this.elasticHostName = elasticHostName;
     }
 
     @Override
@@ -71,7 +74,9 @@ public class LoadTestdResultBuildAction
     public Collection<? extends Action> getProjectActions()
     {
         return this.builds != null ? //
-            Arrays.asList( new LoadResultProjectAction( this.builds, this.builds.getLastBuild() ) ) : Collections.emptyList();
+            Arrays.asList(
+                new LoadResultProjectAction( this.builds, this.builds.getLastBuild(), this.elasticHostName ) ) //
+            : Collections.emptyList();
     }
 
     @Override
@@ -84,7 +89,7 @@ public class LoadTestdResultBuildAction
     public void onLoad( Run<?, ?> r )
     {
         Job parent = r.getParent();
-        if (parent != null)
+        if ( parent != null )
         {
             this.builds = parent.getBuilds();
         }
