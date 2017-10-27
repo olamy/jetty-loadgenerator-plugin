@@ -100,17 +100,18 @@ public class LoadResultProjectAction
         LOGGER.debug( "doResponseTimeTrend" );
 
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
-        // getting data
-        List<String> resultIds = new ArrayList<>();
-        this.builds.stream().forEach( o -> {
-            LoadTestdResultBuildAction loadTestdResultBuildAction = o.getAction( LoadTestdResultBuildAction.class );
-            if ( loadTestdResultBuildAction != null //
-                && StringUtils.isNotEmpty( loadTestdResultBuildAction.getLoadResultId() ) )
-            {
-                resultIds.add( loadTestdResultBuildAction.getLoadResultId() );
-            }
-        } );
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore())
+        {
+            // getting data
+            List<String> resultIds = new ArrayList<>();
+            this.builds.stream().forEach( o -> {
+                LoadTestdResultBuildAction loadTestdResultBuildAction = o.getAction( LoadTestdResultBuildAction.class );
+                if ( loadTestdResultBuildAction != null //
+                    && StringUtils.isNotEmpty( loadTestdResultBuildAction.getLoadResultId() ) )
+                {
+                    resultIds.add( loadTestdResultBuildAction.getLoadResultId() );
+                }
+            } );
 
 //     we need this type of Json
 //        {
@@ -121,20 +122,16 @@ public class LoadResultProjectAction
 //        }
 //        }
 
-        ObjectMapper objectMapper = new ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> values = new HashMap<>();
+            values.put( "values", resultIds );
+            Map<String, Object> ids = new HashMap<>();
+            ids.put( "ids", values );
+            Map<String, Object> query = new HashMap<>();
+            query.put( "query", ids );
+            StringWriter stringWriter = new StringWriter();
+            objectMapper.writeValue( stringWriter, query );
 
-        //Map<String, Object> json = new HashMap<>(  );
-        Map<String, Object> values = new HashMap<>();
-        values.put( "values", resultIds );
-        Map<String, Object> ids = new HashMap<>();
-        ids.put( "ids", values );
-        Map<String, Object> query = new HashMap<>();
-        query.put( "query", ids );
-        StringWriter stringWriter = new StringWriter();
-        objectMapper.writeValue( stringWriter, query );
-
-        try
-        {
             ContentResponse contentResponse = elasticResultStore.getHttpClient() //
                 .newRequest( elasticHost.getElasticHost(), elasticHost.getElasticPort() ) //
                 .scheme( elasticHost.getElasticScheme() ) //

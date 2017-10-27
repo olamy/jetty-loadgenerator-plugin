@@ -34,7 +34,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
-import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 import org.mortbay.jetty.load.generator.store.ResultStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -84,7 +82,7 @@ public class LoadTestResultPublisher
     {
         if ( elasticHost != null && StringUtils.isNotEmpty( elasticHost.getElasticHost() ) )
         {
-            this.resultStore = elasticHost.buildElasticResultStore(  );
+            this.resultStore = elasticHost.buildElasticResultStore();
         }
         else
         {
@@ -224,6 +222,13 @@ public class LoadTestResultPublisher
         public boolean isActive( Map<String, String> setupData )
         {
             return false;
+        }
+
+        @Override
+        public void close()
+            throws IOException
+        {
+            //no op
         }
 
         @Override
