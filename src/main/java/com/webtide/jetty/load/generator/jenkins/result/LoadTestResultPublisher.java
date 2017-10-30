@@ -127,15 +127,14 @@ public class LoadTestResultPublisher
             // FIXME calculate score from previous build
             HealthReport healthReport = new HealthReport( 30, "text" );
 
-            ResultStore.ExtendedLoadResult extendedLoadResult =
-                new ResultStore.ExtendedLoadResult( "jenkins-" + run.getId(), loadResult );
+            loadResult.uuid( "jenkins-" + run.getId() );
 
-            this.getResultStore( elasticHost ).save( extendedLoadResult );
+            this.getResultStore( elasticHost ).save( loadResult );
 
-            taskListener.getLogger().println( "Load result stored with id: " + extendedLoadResult.getUuid() );
+            taskListener.getLogger().println( "Load result stored with id: " + loadResult.getUuid() );
 
             run.addAction(
-                new LoadTestdResultBuildAction( healthReport, extendedLoadResult.getUuid(), run, elasticHostName ) );
+                new LoadTestdResultBuildAction( healthReport, loadResult.getUuid(), run, elasticHostName ) );
         }
     }
 
@@ -189,25 +188,31 @@ public class LoadTestResultPublisher
         }
 
         @Override
-        public void save( ExtendedLoadResult extendedLoadResult )
+        public void save( LoadResult loadResult )
         {
             LOGGER.info( "No elastic host defined so results are not stored " );
         }
 
         @Override
-        public void remove( ExtendedLoadResult loadResult )
+        public void remove( LoadResult loadResult )
         {
-
+            // no op
         }
 
         @Override
-        public List<ExtendedLoadResult> find( QueryFiler queryFiler )
+        public List<LoadResult> get( List<String> loadResultId )
         {
             return null;
         }
 
         @Override
-        public List<ExtendedLoadResult> findAll()
+        public List<LoadResult> find( QueryFiler queryFiler )
+        {
+            return null;
+        }
+
+        @Override
+        public List<LoadResult> findAll()
         {
             return null;
         }
@@ -232,7 +237,7 @@ public class LoadTestResultPublisher
         }
 
         @Override
-        public ExtendedLoadResult get( String loadResultId )
+        public LoadResult get( String loadResultId )
         {
             return null;
         }

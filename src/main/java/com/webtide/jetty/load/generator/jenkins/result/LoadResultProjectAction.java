@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.mortbay.jetty.load.generator.listeners.LoadResult;
 import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 import org.mortbay.jetty.load.generator.store.ResultStore;
 import org.slf4j.Logger;
@@ -113,33 +114,7 @@ public class LoadResultProjectAction
                 }
             } );
 
-//     we need this type of Json
-//        {
-//            "query": {
-//            "ids" : {
-//                "values" : ["192267e6-7f74-4806-867a-c13ef777d6eb", "80a2dc5b-4a92-48ba-8f5b-f2de1588318a"]
-//            }
-//        }
-//        }
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> values = new HashMap<>();
-            values.put( "values", resultIds );
-            Map<String, Object> ids = new HashMap<>();
-            ids.put( "ids", values );
-            Map<String, Object> query = new HashMap<>();
-            query.put( "query", ids );
-            StringWriter stringWriter = new StringWriter();
-            objectMapper.writeValue( stringWriter, query );
-
-            ContentResponse contentResponse = elasticResultStore.getHttpClient() //
-                .newRequest( elasticHost.getElasticHost(), elasticHost.getElasticPort() ) //
-                .scheme( elasticHost.getElasticScheme() ) //
-                .method( HttpMethod.GET ) //
-                .path( "/loadresult/result/_search" ) //
-                .content( new StringContentProvider( stringWriter.toString() ) ) //
-                .send();
-            List<ResultStore.ExtendedLoadResult> loadResults = ElasticResultStore.map( contentResponse );
+            List<LoadResult> loadResults = elasticResultStore.get( resultIds );
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
@@ -147,7 +122,7 @@ public class LoadResultProjectAction
                                                                      extendedLoadResult.getCollectorInformations() ) ) //
                     .collect( Collectors.toList() );
 
-            objectMapper.writeValue( rsp.getWriter(), runInformations );
+            new ObjectMapper(  ).writeValue( rsp.getWriter(), runInformations );
             //rsp.getWriter().write( data );
 
         }
