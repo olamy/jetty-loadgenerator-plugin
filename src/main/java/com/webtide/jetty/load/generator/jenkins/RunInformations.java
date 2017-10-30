@@ -7,6 +7,8 @@ public class RunInformations
 {
     private String buildId;
 
+    private String jettyVersion;
+
     public RunInformations( String buildId, CollectorInformations collectorInformations )
     {
         this.buildId = buildId;
@@ -30,4 +32,21 @@ public class RunInformations
     {
         this.buildId = buildId;
     }
+
+    public String getJettyVersion()
+    {
+        return jettyVersion;
+    }
+
+    public void setJettyVersion( String jettyVersion )
+    {
+        this.jettyVersion = jettyVersion;
+    }
+
+    public RunInformations jettyVersion( String jettyVersion )
+    {
+        this.jettyVersion = jettyVersion;
+        return this;
+    }
+
 }

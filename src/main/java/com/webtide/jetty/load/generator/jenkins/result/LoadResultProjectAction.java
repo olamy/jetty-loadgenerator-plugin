@@ -25,24 +25,17 @@ import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
-import org.eclipse.jetty.http.HttpMethod;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
 import org.mortbay.jetty.load.generator.store.ElasticResultStore;
-import org.mortbay.jetty.load.generator.store.ResultStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -118,13 +111,12 @@ public class LoadResultProjectAction
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
-                    .map( extendedLoadResult -> new RunInformations( extendedLoadResult.getUuid(),
-                                                                     extendedLoadResult.getCollectorInformations() ) ) //
+                    .map( loadResult -> new RunInformations( loadResult.getUuid(), //
+                                                             loadResult.getCollectorInformations() ) //
+                        .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) ) //
                     .collect( Collectors.toList() );
 
-            new ObjectMapper(  ).writeValue( rsp.getWriter(), runInformations );
-            //rsp.getWriter().write( data );
-
+            new ObjectMapper().writeValue( rsp.getWriter(), runInformations );
         }
         catch ( Exception e )
         {

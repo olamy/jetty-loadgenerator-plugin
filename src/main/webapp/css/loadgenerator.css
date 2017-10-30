@@ -36,6 +36,10 @@
     content: 'Response Time Trend ms';
 }
 
+.floating-box-load-result-time::after{
+    content: 'Response Time Trend \00B5s';
+}
+
 .floating-box-latency-time::after{
     content: 'Latency Time Trend ms';
 }

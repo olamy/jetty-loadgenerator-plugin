@@ -6,7 +6,7 @@
     <m:import/>
     <l:main-panel>
       <h2>Global Reponse Time Result</h2>
-      <div class="graph-container floating-box-response-time" align="right">
+      <div class="graph-container floating-box-load-result-time" align="right">
         <div id="load_result_response_time_trend" class="graph" style="width: 85%;height: 170px">
         </div>
         <script type="text/javascript" language="javascript">
@@ -23,10 +23,16 @@
           parseTime: false,
           hideHover: 'auto',
           dateFormat: function(x) {
-          return x;
+            return x;
           },
           xLabelFormat: function(x) {
-          return 'Build #' + x.src.buildId;
+            return 'Build #' + x.src.buildId;
+          },
+          hoverCallback: function (index, options, content, row) {
+            return 'jettyVersion: ' + row.jettyVersion + '<br/>'
+              + 'Mean: ' + row.mean + '<br/>'
+              + 'Value 50: ' + row.value50 + '<br/>'
+              + 'Value 90: ' + row.value90;
           }
           });
           });
