@@ -4,6 +4,9 @@
   <f:entry title="${%resultFilePath}" field="resultFilePath">
     <f:textbox/>
   </f:entry>
+  <f:entry title="${%idPrefix}" field="idPrefix">
+    <f:textbox/>
+  </f:entry>
   <f:entry title="${%Elastic Host}">
     <select class="setting-input" name="elasticHostName">
       <j:forEach var="s" items="${descriptor.elasticHosts}">

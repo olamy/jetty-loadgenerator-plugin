@@ -58,13 +58,16 @@ public class LoadTestResultPublisher
 
     private String elasticHostName;
 
+    private String idPrefix;
+
     private transient ResultStore resultStore;
 
     @DataBoundConstructor
-    public LoadTestResultPublisher( String resultFilePath, String elasticHostName )
+    public LoadTestResultPublisher( String resultFilePath, String elasticHostName, String idPrefix )
     {
         this.resultFilePath = resultFilePath;
         this.elasticHostName = elasticHostName;
+        this.idPrefix = idPrefix;
     }
 
     public ResultStore getResultStore( ElasticHost elasticHost )
@@ -106,6 +109,16 @@ public class LoadTestResultPublisher
         return resultFilePath;
     }
 
+    public String getIdPrefix()
+    {
+        return idPrefix;
+    }
+
+    public void setIdPrefix( String idPrefix )
+    {
+        this.idPrefix = idPrefix;
+    }
+
     @Override
     public void perform( @Nonnull Run<?, ?> run, @Nonnull FilePath filePath, @Nonnull Launcher launcher,
                          @Nonnull TaskListener taskListener )
@@ -127,7 +140,10 @@ public class LoadTestResultPublisher
             // FIXME calculate score from previous build
             HealthReport healthReport = new HealthReport( 30, "text" );
 
-            loadResult.uuid( "jenkins-" + run.getId() );
+            String uuid = StringUtils.isEmpty( idPrefix ) ? "jenkins-" + run.getParent().getName() : idPrefix;
+            uuid += "-" + run.getId();
+
+            loadResult.uuid( uuid ).uuidPrefix( idPrefix );
 
             this.getResultStore( elasticHost ).save( loadResult );
 
