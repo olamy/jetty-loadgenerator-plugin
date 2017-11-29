@@ -17,7 +17,9 @@
 
 package com.webtide.jetty.load.generator.jenkins.result;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -135,7 +137,9 @@ public class LoadTestResultPublisher
         }
         try (InputStream inputStream = resultFile.read())
         {
-            LoadResult loadResult = new ObjectMapper().readValue( inputStream, LoadResult.class );
+            LoadResult loadResult = new ObjectMapper() //
+                .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false ) //
+                .readValue( inputStream, LoadResult.class );
 
             // FIXME calculate score from previous build
             HealthReport healthReport = new HealthReport( 30, "text" );
