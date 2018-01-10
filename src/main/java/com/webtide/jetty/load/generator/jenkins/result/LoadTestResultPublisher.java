@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2016 Webtide LLC, Olivier Lamy
+//  Copyright (c) 1995-2018 Webtide LLC, Olivier Lamy
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@ package com.webtide.jetty.load.generator.jenkins.result;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -226,7 +225,7 @@ public class LoadTestResultPublisher
         }
 
         @Override
-        public List<LoadResult> find( QueryFiler queryFiler )
+        public List<LoadResult> find( QueryFilter queryFilter )
         {
             return null;
         }
