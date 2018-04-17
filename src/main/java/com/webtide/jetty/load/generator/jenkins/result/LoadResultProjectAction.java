@@ -101,9 +101,9 @@ public class LoadResultProjectAction
             this.builds.stream().forEach( o -> {
                 LoadTestdResultBuildAction loadTestdResultBuildAction = o.getAction( LoadTestdResultBuildAction.class );
                 if ( loadTestdResultBuildAction != null //
-                    && StringUtils.isNotEmpty( loadTestdResultBuildAction.getLoadResultId() ) )
+                    && StringUtils.isNotEmpty( loadTestdResultBuildAction.getBuildId() ) )
                 {
-                    resultIds.add( loadTestdResultBuildAction.getLoadResultId() );
+                    resultIds.add( loadTestdResultBuildAction.getBuildId() );
                 }
             } );
 

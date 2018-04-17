@@ -125,36 +125,40 @@ public class LoadTestResultPublisher
                          @Nonnull TaskListener taskListener )
         throws InterruptedException, IOException
     {
+//        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+//
+//        FilePath resultFile = filePath.child( getResultFilePath() );
+//        if ( !resultFile.exists() )
+//        {
+//            taskListener.getLogger().println( "Cannot find load result file" );
+//            return;
+//        }
+//        try (InputStream inputStream = resultFile.read())
+//        {
+//            LoadResult loadResult = new ObjectMapper() //
+//                .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false ) //
+//                .readValue( inputStream, LoadResult.class );
+//
+//            // FIXME calculate score from previous build
+//            HealthReport healthReport = new HealthReport( 30, "text" );
+//
+//            String uuid = StringUtils.isEmpty( idPrefix ) ? "jenkins-" + run.getParent().getName() : idPrefix;
+//            uuid += "-" + run.getId();
+//
+//            loadResult.uuid( uuid ).uuidPrefix( idPrefix );
+//
+//            this.getResultStore( elasticHost ).save( loadResult );
+//
+//            taskListener.getLogger().println( "Load result stored with id: " + loadResult.getUuid() );
+//
+//            run.addAction(
+//                new LoadTestdResultBuildAction( healthReport, loadResult.getUuid(), run, elasticHostName ) );
+//        }
 
-        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-
-        FilePath resultFile = filePath.child( getResultFilePath() );
-        if ( !resultFile.exists() )
-        {
-            taskListener.getLogger().println( "Cannot find load result file" );
-            return;
-        }
-        try (InputStream inputStream = resultFile.read())
-        {
-            LoadResult loadResult = new ObjectMapper() //
-                .configure( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false ) //
-                .readValue( inputStream, LoadResult.class );
-
-            // FIXME calculate score from previous build
-            HealthReport healthReport = new HealthReport( 30, "text" );
-
-            String uuid = StringUtils.isEmpty( idPrefix ) ? "jenkins-" + run.getParent().getName() : idPrefix;
-            uuid += "-" + run.getId();
-
-            loadResult.uuid( uuid ).uuidPrefix( idPrefix );
-
-            this.getResultStore( elasticHost ).save( loadResult );
-
-            taskListener.getLogger().println( "Load result stored with id: " + loadResult.getUuid() );
-
-            run.addAction(
-                new LoadTestdResultBuildAction( healthReport, loadResult.getUuid(), run, elasticHostName ) );
-        }
+        // FIXME use a json file to calculate some HealthReport
+        LOGGER.info( "publish result" );
+        run.addAction(
+                new LoadTestdResultBuildAction( null, run, elasticHostName ) );
     }
 
     @Override

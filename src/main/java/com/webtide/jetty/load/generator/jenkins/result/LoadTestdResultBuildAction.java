@@ -36,9 +36,6 @@ import java.util.Collections;
 public class LoadTestdResultBuildAction
     implements HealthReportingAction, SimpleBuildStep.LastBuildAction, RunAction2
 {
-
-    private final String loadResultId;
-
     private final HealthReport healthReport;
 
     private final String buildId;
@@ -49,25 +46,24 @@ public class LoadTestdResultBuildAction
 
     private transient RunList<?> builds;
 
-    public LoadTestdResultBuildAction( HealthReport healthReport, String loadResultId, Run<?, ?> run,
+    public LoadTestdResultBuildAction( HealthReport healthReport, Run<?, ?> run,
                                        String elasticHostName )
     {
-        this.loadResultId = loadResultId;
         this.healthReport = healthReport;
         this.buildId = run.getId();
         this.jobName = run.getParent().getName();
         this.elasticHostName = elasticHostName;
     }
 
+    public String getBuildId()
+    {
+        return buildId;
+    }
+
     @Override
     public HealthReport getBuildHealth()
     {
         return null;
-    }
-
-    public String getLoadResultId()
-    {
-        return loadResultId;
     }
 
     @Override
