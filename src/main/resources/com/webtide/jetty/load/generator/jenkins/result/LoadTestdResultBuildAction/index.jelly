@@ -2,8 +2,9 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
          xmlns:m="/com/webtide/jetty/load/generator/jenkins/tags">
-  <l:layout title="Load Test Result">
+  <!--l:layout title="Load Test Result"-->
     index.jelly LoadTestdResultBuildAction
-  </l:layout>
+    ${it.loadResults.size()}
+  <!--/l:layout-->
 
 </j:jelly>

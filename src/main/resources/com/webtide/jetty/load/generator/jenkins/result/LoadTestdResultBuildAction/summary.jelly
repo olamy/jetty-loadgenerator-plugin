@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:st="jelly:stapler">
-    <t:summary icon="monitor.png">
-        summary.jelly LoadTestdResultBuildAction
-    </t:summary>
+<j:jelly xmlns:j="jelly:core" xmlns:t="/lib/hudson">
+  <t:summary icon="monitor.png">
+    summary.jelly LoadTestdResultBuildAction
+    <j:forEach var="loadResult" items="${it.loadResults}">
+      <p>
+        ${loadResult.serverInfo.jettyVersion}
+      </p>
+    </j:forEach>
+
+  </t:summary>
 
 </j:jelly>

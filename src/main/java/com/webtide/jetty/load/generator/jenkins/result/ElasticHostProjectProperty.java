@@ -6,6 +6,7 @@ import hudson.model.JobProperty;
 import hudson.model.JobPropertyDescriptor;
 import hudson.util.CopyOnWriteList;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -55,6 +56,15 @@ public class ElasticHostProjectProperty
         public List<ElasticHost> getElasticHosts()
         {
             return elasticHosts.getView();
+        }
+
+        public ElasticHost getElasticHostByName(String hostName)
+        {
+            return elasticHosts.getView() //
+                .stream() //
+                .filter( elasticHost -> StringUtils.equals( elasticHost.getElasticHostName(), hostName )) //
+                .findFirst() //
+                .get();
         }
 
         @Override

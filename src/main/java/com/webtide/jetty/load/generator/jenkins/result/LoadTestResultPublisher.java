@@ -23,7 +23,6 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractProject;
-import hudson.model.HealthReport;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
@@ -35,15 +34,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
+import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 import org.mortbay.jetty.load.generator.store.ResultStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  *
@@ -62,6 +62,9 @@ public class LoadTestResultPublisher
     private String idPrefix;
 
     private transient ResultStore resultStore;
+
+    public static final ObjectMapper OBJECT_MAPPER =
+        new ObjectMapper().configure( DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false );
 
     @DataBoundConstructor
     public LoadTestResultPublisher( String resultFilePath, String elasticHostName, String idPrefix )
@@ -157,8 +160,27 @@ public class LoadTestResultPublisher
 
         // FIXME use a json file to calculate some HealthReport
         LOGGER.info( "publish result" );
-        run.addAction(
-                new LoadTestdResultBuildAction( null, run, elasticHostName ) );
+        if ( StringUtils.isEmpty( elasticHostName ) )
+        {
+            // we use the first one
+            Optional<ElasticHost> elasticHost =
+                ElasticHostProjectProperty.DESCRIPTOR.getElasticHosts().stream().findFirst();
+            elasticHostName = elasticHost.isPresent() ? elasticHost.get().getElasticHostName() : "";
+        }
+
+        ElasticHost elasticHost = ElasticHostProjectProperty.DESCRIPTOR.getElasticHostByName( elasticHostName );
+        ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
+        List<LoadResult> loadResults = elasticResultStore.searchResultsByExternalId( "101" );// run.getId() );
+
+        try
+        {
+            run.addAction( new LoadTestdResultBuildAction( null, run, elasticHostName,
+                                                           OBJECT_MAPPER.writeValueAsString( loadResults ) ) );
+        }
+        catch ( Exception e )
+        {
+            throw new IOException( e.getMessage(), e );
+        }
     }
 
     @Override

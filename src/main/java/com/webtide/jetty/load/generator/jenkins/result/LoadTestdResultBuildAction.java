@@ -17,6 +17,7 @@
 
 package com.webtide.jetty.load.generator.jenkins.result;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import hudson.model.Action;
 import hudson.model.HealthReport;
 import hudson.model.HealthReportingAction;
@@ -25,10 +26,15 @@ import hudson.model.Run;
 import hudson.util.RunList;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
+import org.mortbay.jetty.load.generator.listeners.LoadResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -36,6 +42,9 @@ import java.util.Collections;
 public class LoadTestdResultBuildAction
     implements HealthReportingAction, SimpleBuildStep.LastBuildAction, RunAction2
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger( LoadTestdResultBuildAction.class );
+
     private final HealthReport healthReport;
 
     private final String buildId;
@@ -46,13 +55,24 @@ public class LoadTestdResultBuildAction
 
     private transient RunList<?> builds;
 
-    public LoadTestdResultBuildAction( HealthReport healthReport, Run<?, ?> run,
-                                       String elasticHostName )
+    // we store json because of  https://jenkins.io/redirect/class-filter/
+    private String loadResultsJson;
+
+    private transient List<LoadResult> loadResults;
+
+    public LoadTestdResultBuildAction( HealthReport healthReport, Run<?, ?> run, String elasticHostName,
+                                       String loadResultsJson )
+        throws Exception
     {
         this.healthReport = healthReport;
         this.buildId = run.getId();
         this.jobName = run.getParent().getName();
         this.elasticHostName = elasticHostName;
+        this.loadResultsJson = loadResultsJson;
+        this.loadResults =
+            LoadTestResultPublisher.OBJECT_MAPPER.readValue( this.loadResultsJson, new TypeReference<List<LoadResult>>()
+            {
+            } );
     }
 
     public String getBuildId()
@@ -89,6 +109,25 @@ public class LoadTestdResultBuildAction
         {
             this.builds = parent.getBuilds();
         }
+        if ( this.loadResults == null && loadResultsJson != null )
+        {
+            try
+            {
+                this.loadResults = LoadTestResultPublisher.OBJECT_MAPPER.readValue( this.loadResultsJson,
+                                                                                    new TypeReference<List<LoadResult>>()
+                                                                                    {
+                                                                                    } );
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "ignore error loading json", e );
+            }
+        }
+    }
+
+    public List<LoadResult> getLoadResults()
+    {
+        return loadResults;
     }
 
     @Override
@@ -108,4 +147,6 @@ public class LoadTestdResultBuildAction
     {
         return null;
     }
+
+
 }
