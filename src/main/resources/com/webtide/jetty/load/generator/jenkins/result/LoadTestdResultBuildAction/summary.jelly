@@ -6,6 +6,19 @@
     <j:forEach var="loadResult" items="${it.loadResults}">
       <p>
         ${loadResult.serverInfo.jettyVersion}
+        <div>
+          Result:
+          <ul>
+            <li>Total: ${loadResult.collectorInformations.totalCount}</li>
+            <li>Mean: ${loadResult.collectorInformations.mean}</li>
+            <li>Value50: ${loadResult.collectorInformations.value50}</li>
+            <li>Value90: ${loadResult.collectorInformations.value90}</li>
+          </ul>
+        </div>
+        <div>
+          Load Config Loader:
+
+        </div>
       </p>
     </j:forEach>
 
