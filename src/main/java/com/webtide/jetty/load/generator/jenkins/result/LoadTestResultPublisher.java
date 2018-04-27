@@ -170,7 +170,7 @@ public class LoadTestResultPublisher
 
         ElasticHost elasticHost = ElasticHostProjectProperty.DESCRIPTOR.getElasticHostByName( elasticHostName );
         ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
-        List<LoadResult> loadResults = elasticResultStore.searchResultsByExternalId( "101" );// run.getId() );
+        List<LoadResult> loadResults = elasticResultStore.searchResultsByExternalId( run.getId());//"101" );// run.getId() );
 
         try
         {
