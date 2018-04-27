@@ -26,7 +26,9 @@ import hudson.model.Run;
 import hudson.util.RunList;
 import jenkins.model.RunAction2;
 import jenkins.tasks.SimpleBuildStep;
+import org.mortbay.jetty.load.generator.listeners.LoadConfig;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
+import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +36,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -127,7 +132,44 @@ public class LoadTestdResultBuildAction
 
     public List<LoadResult> getLoadResults()
     {
+        if ( loadResults == null )
+        {
+            ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+            try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore())
+            {
+                this.loadResults = elasticResultStore.searchResultsByExternalId( buildId );
+                this.loadResultsJson = LoadTestResultPublisher.OBJECT_MAPPER.writeValueAsString( loadResults );
+            }
+            catch ( Exception e )
+            {
+                LOGGER.error( e.getMessage(), e );
+                this.loadResults = Collections.emptyList();
+            }
+        }
         return loadResults;
+    }
+
+    public static LoadConfig getLoaderConfig( LoadResult loadResult )
+    {
+        Optional<LoadConfig> optionalLoadConfig = loadResult.getLoadConfigs().stream() //
+            .filter( loadConfig -> loadConfig.getType() == LoadConfig.Type.LOADER ) //
+            .findFirst();
+        return optionalLoadConfig.isPresent() ? optionalLoadConfig.get() : null;
+    }
+
+    public List<LoadResult> getLoadResultsOrderByEstimatedQps()
+    {
+        return loadResults.stream() //
+            .sorted(
+                Comparator.comparingInt( value -> estimatedQps( getLoaderConfig( (LoadResult) value ) ) ) ).collect(
+                Collectors.toList() );
+    }
+
+    public static int estimatedQps( LoadConfig loadConfig )
+    {
+        return loadConfig.getInstanceNumber() //
+            * loadConfig.getResourceNumber() //
+            * loadConfig.getResourceRate();
     }
 
     @Override
