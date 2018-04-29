@@ -19,7 +19,6 @@
           jQueryLoadGenerator.noConflict();
           jQueryLoadGenerator('#jettyVersions').on('change', function() {
             version = jQueryLoadGenerator(this).find(":selected").val();
-            console.log("displayTimeTrend:"+version);
             jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+version, function (json) {
               jQueryLoadGenerator("#load_result_response_time_trend").empty();
               var grah = Morris.Line({
@@ -36,7 +35,7 @@
                   return x;
                 },
                 xLabelFormat: function(x) {
-                  return 'Build #' + x.src.buildId;
+                  return '';// to verbose and non readable Build #' + x.src.buildId;
                 },
                 hoverCallback: function (index, options, content, row) {
                   return 'jettyVersion: ' + row.jettyVersion + '<br/>'

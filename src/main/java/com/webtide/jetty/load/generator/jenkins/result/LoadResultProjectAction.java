@@ -138,9 +138,9 @@ public class LoadResultProjectAction
             "/versionResult.json" ))
         {
             String versionResultQuery = IOUtils.toString( inputStream );
-            Map<String,String> map = new HashMap<>( 1 );
+            Map<String, String> map = new HashMap<>( 1 );
             map.put( "jettyVersion", jettyVersion );
-            versionResultQuery = StrSubstitutor.replace( versionResultQuery, map);
+            versionResultQuery = StrSubstitutor.replace( versionResultQuery, map );
 
             String results = elasticResultStore.search( versionResultQuery );
 
@@ -149,8 +149,9 @@ public class LoadResultProjectAction
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
-                    .map( loadResult -> new RunInformations( loadResult.getUuid(), //
-                                                             loadResult.getCollectorInformations() ) //
+                    .map( loadResult -> new RunInformations(
+                        loadResult.getServerInfo().getJettyVersion() + ":" + loadResult.getServerInfo().getGitHash(), //
+                        loadResult.getCollectorInformations() ) //
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) ) //
                     .collect( Collectors.toList() );
 
