@@ -95,8 +95,8 @@ public class LoadResultProjectAction
      *
      * @return all jetty versions available in loadresult index key version value number of results
      */
-    public void doGetJettyVersions(StaplerRequest req, StaplerResponse rsp)
-        throws IOException, ServletException {
+    public Map<String, String> getJettyVersions()
+        throws IOException {
         LOGGER.debug( "getJettyVersions" );
 
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
@@ -111,7 +111,7 @@ public class LoadResultProjectAction
 
             Map<String, String> versions = versionsListMap.stream() //
                 .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get("doc_count") ) ) );
-            LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), versions );
+            return versions;
         }
     }
 
