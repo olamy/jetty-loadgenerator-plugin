@@ -5,6 +5,13 @@
   <l:layout title="Load Generator">
     <m:import/>
     <l:main-panel>
+      <script type="text/javascript" language="javascript">
+        console.log("getJettyVersions code block");
+        jQueryLoadGenerator.noConflict();
+        jQueryLoadGenerator.getJSON("getJettyVersions", function (json) {
+          console.log("doGetJettyVersions json"+json);
+        });
+      </script>
       <h2>Global Reponse Time Result</h2>
       <div class="graph-container floating-box-load-result-time" align="right">
         <div id="load_result_response_time_trend" class="graph" style="width: 85%;height: 170px">

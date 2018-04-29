@@ -130,6 +130,7 @@ public class ElasticHost
         return null;
     }
 
+    // FIXME definitely something better to do as we build httpclient everytime.....
     public ElasticResultStore buildElasticResultStore()
     {
         ElasticResultStore elasticResultStore = new ElasticResultStore();

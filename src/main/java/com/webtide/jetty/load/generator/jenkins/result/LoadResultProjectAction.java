@@ -18,12 +18,14 @@
 package com.webtide.jetty.load.generator.jenkins.result;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import com.webtide.jetty.load.generator.jenkins.PluginConstants;
 import com.webtide.jetty.load.generator.jenkins.RunInformations;
 import hudson.model.Actionable;
 import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -34,8 +36,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -87,6 +91,30 @@ public class LoadResultProjectAction
     }
 
 
+    /**
+     *
+     * @return all jetty versions available in loadresult index key version value number of results
+     */
+    public void doGetJettyVersions(StaplerRequest req, StaplerResponse rsp)
+        throws IOException, ServletException {
+        LOGGER.debug( "getJettyVersions" );
+
+        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
+             InputStream inputStream = this.getClass().getResourceAsStream("/distinctJettyVersion.json" ))
+        {
+            String distinctSearchQuery = IOUtils.toString( inputStream );
+
+            String distinctResult = elasticResultStore.search( distinctSearchQuery );
+
+            List<Map<String,String>> versionsListMap = JsonPath.parse( distinctResult ).read( "$.aggregations.version.buckets");
+
+            Map<String, String> versions = versionsListMap.stream() //
+                .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get("doc_count") ) ) );
+            LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), versions );
+        }
+    }
+
     public void doResponseTimeTrend( StaplerRequest req, StaplerResponse rsp )
         throws IOException, ServletException
     {
@@ -116,7 +144,7 @@ public class LoadResultProjectAction
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) ) //
                     .collect( Collectors.toList() );
 
-            new ObjectMapper().writeValue( rsp.getWriter(), runInformations );
+            LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
         }
         catch ( Exception e )
         {
