@@ -11,3 +11,5 @@ curl -s -XGET 'localhost:9200/loadresult/result/_search?pretty' -H 'Content-Type
     }
 ,"sort":  { "timestamp": { "order": "desc" }}
 }'
+
+

@@ -1,0 +1,7 @@
+{
+  "size" : 100,
+  "query": {
+    "wildcard" : { "serverInfo.jettyVersion" : "${jettyVersion}" }
+  }
+,"sort":  { "timestamp": { "order": "desc" }}
+}

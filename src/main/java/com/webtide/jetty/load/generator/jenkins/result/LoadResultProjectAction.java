@@ -17,7 +17,6 @@
 
 package com.webtide.jetty.load.generator.jenkins.result;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.webtide.jetty.load.generator.jenkins.PluginConstants;
 import com.webtide.jetty.load.generator.jenkins.RunInformations;
@@ -26,7 +25,9 @@ import hudson.model.ProminentProjectAction;
 import hudson.model.Run;
 import hudson.util.RunList;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.client.HttpContentResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.mortbay.jetty.load.generator.listeners.LoadResult;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -92,25 +93,26 @@ public class LoadResultProjectAction
 
 
     /**
-     *
      * @return all jetty versions available in loadresult index key version value number of results
      */
     public Map<String, String> getJettyVersions()
-        throws IOException {
+        throws IOException
+    {
         LOGGER.debug( "getJettyVersions" );
 
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
-             InputStream inputStream = this.getClass().getResourceAsStream("/distinctJettyVersion.json" ))
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); InputStream inputStream = this.getClass().getResourceAsStream(
+            "/distinctJettyVersion.json" ))
         {
             String distinctSearchQuery = IOUtils.toString( inputStream );
 
             String distinctResult = elasticResultStore.search( distinctSearchQuery );
 
-            List<Map<String,String>> versionsListMap = JsonPath.parse( distinctResult ).read( "$.aggregations.version.buckets");
+            List<Map<String, String>> versionsListMap =
+                JsonPath.parse( distinctResult ).read( "$.aggregations.version.buckets" );
 
             Map<String, String> versions = versionsListMap.stream() //
-                .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get("doc_count") ) ) );
+                .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get( "doc_count" ) ) ) );
             return versions;
         }
     }
@@ -121,21 +123,29 @@ public class LoadResultProjectAction
 
         LOGGER.debug( "doResponseTimeTrend" );
 
-        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore())
-        {
-            // getting data
-            List<String> resultIds = new ArrayList<>();
-            this.builds.stream().forEach( o -> {
-                LoadTestdResultBuildAction loadTestdResultBuildAction = o.getAction( LoadTestdResultBuildAction.class );
-                if ( loadTestdResultBuildAction != null //
-                    && StringUtils.isNotEmpty( loadTestdResultBuildAction.getBuildId() ) )
-                {
-                    resultIds.add( loadTestdResultBuildAction.getBuildId() );
-                }
-            } );
+        String jettyVersion = req.getParameter( "jettyVersion" );
 
-            List<LoadResult> loadResults = elasticResultStore.get( resultIds );
+        // jettyVersion 9.4.9*
+        //in case jettyVersion is 9.4.9.v20180320 we need to replace with 9.4.9*
+        if ( StringUtils.contains( jettyVersion, 'v' ) )
+        {
+            jettyVersion = StringUtils.substringBeforeLast( jettyVersion, ".v" );
+        }
+        jettyVersion = jettyVersion + "*";
+
+        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); InputStream inputStream = this.getClass().getResourceAsStream(
+            "/versionResult.json" ))
+        {
+            String versionResultQuery = IOUtils.toString( inputStream );
+            Map<String,String> map = new HashMap<>( 1 );
+            map.put( "jettyVersion", jettyVersion );
+            versionResultQuery = StrSubstitutor.replace( versionResultQuery, map);
+
+            String results = elasticResultStore.search( versionResultQuery );
+
+            List<LoadResult> loadResults =
+                ElasticResultStore.map( new HttpContentResponse( null, results.getBytes(), null, null ) );
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //

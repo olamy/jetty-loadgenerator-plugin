@@ -5,7 +5,7 @@
   <l:layout title="Load Generator">
     <m:import/>
     <l:main-panel>
-      <select name="jettyVersions">
+      <select id="jettyVersions">
         <j:forEach var="jettyVersion" items="${it.getJettyVersions()}">
           <option value="${jettyVersion.key}">${jettyVersion.key}</option>
         </j:forEach>
@@ -17,31 +17,36 @@
         </div>
         <script type="text/javascript" language="javascript">
           jQueryLoadGenerator.noConflict();
-          jQueryLoadGenerator.getJSON("responseTimeTrend", function (json) {
-          var grah = Morris.Line({
-          element: 'load_result_response_time_trend',
-          data: json,
-          xkey: 'startTimeStamp',
-          ykeys: ['mean','value50','value90'], // ,'maxValue'
-          labels: ['Mean','Value 50','Value 90'], // , 'Max'
-          resize: true,
-          pointSize: 1,
-          parseTime: false,
-          hideHover: 'auto',
-          dateFormat: function(x) {
-            return x;
-          },
-          xLabelFormat: function(x) {
-            return 'Build #' + x.src.buildId;
-          },
-          hoverCallback: function (index, options, content, row) {
-            return 'jettyVersion: ' + row.jettyVersion + '<br/>'
-              + 'Mean: ' + row.mean + '<br/>'
-              + 'Value 50: ' + row.value50 + '<br/>'
-              + 'Value 90: ' + row.value90;
-          }
-          });
-          });
+          jQueryLoadGenerator('#jettyVersions').on('change', function() {
+            version = jQueryLoadGenerator(this).find(":selected").val();
+            console.log("displayTimeTrend:"+version);
+            jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+version, function (json) {
+              jQueryLoadGenerator("#load_result_response_time_trend").empty();
+              var grah = Morris.Line({
+                element: 'load_result_response_time_trend',
+                data: json,
+                xkey: 'startTimeStamp',
+                ykeys: ['mean','value50','value90'], // ,'maxValue'
+                labels: ['Mean','Value 50','Value 90'], // , 'Max'
+                resize: true,
+                pointSize: 1,
+                parseTime: false,
+                hideHover: 'auto',
+                dateFormat: function(x) {
+                  return x;
+                },
+                xLabelFormat: function(x) {
+                  return 'Build #' + x.src.buildId;
+                },
+                hoverCallback: function (index, options, content, row) {
+                  return 'jettyVersion: ' + row.jettyVersion + '<br/>'
+                    + 'Mean: ' + row.mean + '<br/>'
+                    + 'Value 50: ' + row.value50 + '<br/>'
+                    + 'Value 90: ' + row.value90;
+                }
+                });
+              });
+          })
         </script>
       </div>
     </l:main-panel>
