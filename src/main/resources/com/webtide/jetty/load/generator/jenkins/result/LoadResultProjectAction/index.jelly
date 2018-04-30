@@ -40,6 +40,7 @@
                 hoverCallback: function (index, options, content, row) {
                   return 'jettyVersion: ' + row.jettyVersion + '<br/>'
                     + 'Mean: ' + row.mean + '<br/>'
+                    + ' Timestamp: ' + row.timestampStr + '<br/>'
                     // + 'Value 50: ' + row.value50 + '<br/>'
                     + 'Value 90: ' + row.value90;
                 }

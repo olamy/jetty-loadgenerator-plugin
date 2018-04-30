@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -166,6 +169,7 @@ public class LoadResultProjectAction
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) ) //
                     .collect( Collectors.toList() );
 
+            Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
             LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
         }
         catch ( Exception e )

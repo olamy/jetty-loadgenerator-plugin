@@ -2,12 +2,17 @@ package com.webtide.jetty.load.generator.jenkins;
 
 import org.mortbay.jetty.load.generator.listeners.CollectorInformations;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class RunInformations
     extends CollectorInformations
 {
     private String buildId;
 
     private String jettyVersion;
+
+    private String timestampStr;
 
     public RunInformations( String buildId, CollectorInformations collectorInformations )
     {
@@ -21,6 +26,13 @@ public class RunInformations
         stdDeviation( collectorInformations.getStdDeviation() );
         startTimeStamp( collectorInformations.getStartTimeStamp() );
         endTimeStamp( collectorInformations.getEndTimeStamp() );
+        timestampStr = new SimpleDateFormat( "dd/MM/yyyy HH:mm:ss" ) //
+            .format( new Date( collectorInformations.getStartTimeStamp() ) );
+    }
+
+    public String getTimestampStr()
+    {
+        return timestampStr;
     }
 
     public String getBuildId()
