@@ -25,8 +25,8 @@
                 element: 'load_result_response_time_trend',
                 data: json,
                 xkey: 'startTimeStamp',
-                ykeys: ['mean','value50','value90'], // ,'maxValue'
-                labels: ['Mean','Value 50','Value 90'], // , 'Max'
+                ykeys: ['mean','value90'], // ,'maxValue' ,'value50'
+                labels: ['Mean','Value 90'], // , 'Max' ,'Value 50'
                 resize: true,
                 pointSize: 1,
                 parseTime: false,
@@ -40,7 +40,7 @@
                 hoverCallback: function (index, options, content, row) {
                   return 'jettyVersion: ' + row.jettyVersion + '<br/>'
                     + 'Mean: ' + row.mean + '<br/>'
-                    + 'Value 50: ' + row.value50 + '<br/>'
+                    // + 'Value 50: ' + row.value50 + '<br/>'
                     + 'Value 90: ' + row.value90;
                 }
                 });

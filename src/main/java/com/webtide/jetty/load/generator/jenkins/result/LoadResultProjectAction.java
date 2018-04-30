@@ -112,6 +112,9 @@ public class LoadResultProjectAction
                 JsonPath.parse( distinctResult ).read( "$.aggregations.version.buckets" );
 
             Map<String, String> versions = versionsListMap.stream() //
+                // filter out test values
+                .filter( stringStringMap -> !(StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.1") //
+                         || StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.2"))  )
                 .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get( "doc_count" ) ) ) );
             return versions;
         }
