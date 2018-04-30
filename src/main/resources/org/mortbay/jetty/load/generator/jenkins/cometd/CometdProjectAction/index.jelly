@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt" xmlns:local="local"
+         xmlns:m="/org/mortbay/jetty/load/generator/jenkins/tags">
+  <l:layout title="Cometd Result">
+    <m:import/>
+    <l:main-panel>
+
+
+
+      <div class="graph-container-title" id="latency_title"></div>
+      <div class="graph-container floating-box-cometd-latency">
+        <div id="load_generator_cometd_latency" class="graph" style="width: 95%;height: 170px">
+        </div>
+      </div>
+
+      <div class="graph-container-title" id="cpu_title"></div>
+      <div class="graph-container floating-box-cometd-cpu">
+        <div id="load_generator_cometd_cpu" class="graph" style="width: 95%;height: 170px">
+        </div>
+      </div>
+
+      <div class="graph-container-title" id="garbage_title"></div>
+      <div class="graph-container floating-box-cometd-garbage">
+        <div id="load_generator_cometd_garbage" class="graph" style="width: 95%;height: 170px">
+        </div>
+      </div>
+
+    </l:main-panel>
+  </l:layout>
+  <script type="text/javascript" language="javascript">
+    jQueryLoadGenerator.noConflict();
+
+    jQueryLoadGenerator.getJSON("titles", function (json) {
+      jQueryLoadGenerator("#latency_title").text(json.latency);
+      jQueryLoadGenerator("#cpu_title").text(json.cpu);
+      jQueryLoadGenerator("#garbage_title").text(json.garbage);
+    });
+
+    jQueryLoadGenerator.getJSON("trend", function (json) {
+
+      var resultValues = [];
+      jQueryLoadGenerator.each(json, function( index, value ) {
+      resultValues.push({
+          buildId: value.buildId,
+          p50: value.loadResults.results.latency.p50.value,
+          min: value.loadResults.results.latency.min.value,
+          p99: value.loadResults.results.latency.p99.value,
+          max: value.loadResults.results.latency.max.value,
+          cpu: value.loadResults.results.cpu.value,
+          youngGarbage_count: value.loadResults.results.gc.youngCount,
+          youngGarbage_value: value.loadResults.results.gc.youngGarbage.value,
+          youngGarbage_unit: value.loadResults.results.gc.youngGarbage.unit,
+          youngGarbage_time_value: value.loadResults.results.gc.youngTime.value,
+          youngGarbage_time_unit: value.loadResults.results.gc.youngTime.unit,
+          oldGarbage_count: value.loadResults.results.gc.oldCount,
+          oldGarbage_value: value.loadResults.results.gc.oldGarbage.value,
+          oldGarbage_unit: value.loadResults.results.gc.oldGarbage.unit,
+          oldGarbage_time_value: value.loadResults.results.gc.oldTime.value,
+          oldGarbage_time_unit: value.loadResults.results.gc.oldTime.unit
+        });
+      });
+
+
+      var latencyGraph = Morris.Line({
+        element: 'load_generator_cometd_latency',
+        data: resultValues,
+        xkey: 'buildId',
+        ykeys: ['p50', 'p99', 'max'],
+        labels: ['p50', 'p99', 'max'],
+        resize: true,
+        pointSize: 1,
+        parseTime: false,
+        hideHover: 'auto',
+        dateFormat: function(x) {
+          return x;
+        },
+        xLabelFormat: function(x) {
+          return 'Build #' + x.src.buildId;
+        }
+      });
+
+      var cpuGraph = Morris.Line({
+        element: 'load_generator_cometd_cpu',
+        data: resultValues,
+        xkey: 'buildId',
+        ykeys: ['cpu'],
+        labels: ['cpu'],
+        resize: true,
+        pointSize: 1,
+        parseTime: false,
+        hideHover: 'auto',
+        dateFormat: function(x) {
+          return x;
+        },
+        xLabelFormat: function(x) {
+          return 'Build #' + x.src.buildId;
+        }
+      });
+
+      var cpuGraph = Morris.Line({
+        element: 'load_generator_cometd_garbage',
+        data: resultValues,
+        xkey: 'buildId',
+        ykeys: ['youngGarbage_count'],
+        labels: ['youngGarbage_count'],
+        resize: true,
+        pointSize: 1,
+        parseTime: false,
+        hideHover: 'auto',
+        dateFormat: function(x) {
+          return x;
+        },
+        xLabelFormat: function(x) {
+          return 'Build #' + x.src.buildId;
+        },
+        hoverCallback: function (index, options, content, row) {
+          var str = "yg: " + row.youngGarbage_value + ' ' + row.youngGarbage_unit + ', ' + row.youngGarbage_count + ' collections'
+              + ";og: " + row.oldGarbage_value + ' ' + row.oldGarbage_unit + ', ' + row.oldGarbage_count + ' collections';
+          return str;
+        }
+      });
+
+
+    });
+  </script>
+
+</j:jelly>

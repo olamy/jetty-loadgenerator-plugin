@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+         xmlns:m="/org/mortbay/jetty/load/generator/jenkins/tags">
+  <l:layout title="Load Generator">
+    <m:import/>
+    <l:main-panel>
+      <h2>Global Reponse Time</h2>
+      <p>
+        <m:morris id="meanResponseTime" height="300px" width="50%" data="${it.allResponseTimeInformations}"
+                  xkey="buildId" parseTime="false"
+                  xLabelFormat="return 'Build #' + x.src.buildId;"
+                  ykeys="['mean','minValue','maxValue','value90', 'value50']"
+                  labels="['Mean','Min','Max','90 Percentile','50 Percentile']"
+                  hideOver="auto" resize="true"/>
+      </p>
+      <h2>Global Latency Time</h2>
+      <p>
+        <m:morris id="meanLatency" height="300px" width="50%" data="${it.allLatencyInformations}"
+                  xkey="buildId" parseTime="false"
+                  xLabelFormat="return 'Build #' + x.src.buildId;"
+                  ykeys="['mean','minValue','maxValue','value90', 'value50']"
+                  labels="['Mean','Min','Max','90 Percentile','50 Percentile']"
+                  hideOver="auto" resize="true"/>
+      </p>
+    </l:main-panel>
+  </l:layout>
+
+</j:jelly>
