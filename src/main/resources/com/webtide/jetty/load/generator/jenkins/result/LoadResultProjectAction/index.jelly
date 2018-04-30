@@ -17,8 +17,7 @@
         </div>
         <script type="text/javascript" language="javascript">
           jQueryLoadGenerator.noConflict();
-          jQueryLoadGenerator('#jettyVersions').on('change', function() {
-            version = jQueryLoadGenerator(this).find(":selected").val();
+          function displayGraphVersion(version){
             jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+version, function (json) {
               jQueryLoadGenerator("#load_result_response_time_trend").empty();
               var grah = Morris.Line({
@@ -32,21 +31,27 @@
                 parseTime: false,
                 hideHover: 'auto',
                 dateFormat: function(x) {
-                  return x;
-                },
-                xLabelFormat: function(x) {
-                  return '';// to verbose and non readable Build #' + x.src.buildId;
-                },
-                hoverCallback: function (index, options, content, row) {
-                  return 'jettyVersion: ' + row.jettyVersion + '<br/>'
-                    + 'Mean: ' + row.mean + '<br/>'
-                    + ' Timestamp: ' + row.timestampStr + '<br/>'
-                    // + 'Value 50: ' + row.value50 + '<br/>'
-                    + 'Value 90: ' + row.value90;
+                return x;
+              },
+              xLabelFormat: function(x) {
+                return '';// to verbose and non readable Build #' + x.src.buildId;
+              },
+              hoverCallback: function (index, options, content, row) {
+                return 'jettyVersion: ' + row.jettyVersion + '<br/>'
+                + 'Mean: ' + row.mean + '<br/>'
+                // + 'Value 50: ' + row.value50 + '<br/>'
+                + 'Value 90: ' + row.value90 + '<br/>'
+                + ' Timestamp: ' + row.timestampStr;
                 }
-                });
               });
+            });
+          }
+          jQueryLoadGenerator('#jettyVersions').on('change', function() {
+            version = jQueryLoadGenerator(this).find(":selected").val();
+            displayGraphVersion(version);
           })
+          version = jQueryLoadGenerator('#jettyVersions').val();
+          displayGraphVersion(version);
         </script>
       </div>
     </l:main-panel>
