@@ -124,12 +124,19 @@ public class LoadResultProjectAction
         LOGGER.debug( "doResponseTimeTrend" );
 
         String jettyVersion = req.getParameter( "jettyVersion" );
+        String originalJettyVersion = jettyVersion;
 
         // jettyVersion 9.4.9*
         //in case jettyVersion is 9.4.9.v20180320 we need to replace with 9.4.9*
         if ( StringUtils.contains( jettyVersion, 'v' ) )
         {
             jettyVersion = StringUtils.substringBeforeLast( jettyVersion, ".v" );
+        }
+        // FIXME investigate elastic but query such 9.4.10-SNAPSHOT doesn't work...
+        // so using 9.4.10* then filter response back....
+        if ( StringUtils.contains( jettyVersion, "-SNAPSHOT" ) )
+        {
+            jettyVersion = StringUtils.substringBeforeLast( jettyVersion, "-SNAPSHOT" );
         }
         jettyVersion = jettyVersion + "*";
 
@@ -149,6 +156,7 @@ public class LoadResultProjectAction
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
+                    .filter( loadResult -> StringUtils.equalsIgnoreCase( originalJettyVersion, loadResult.getServerInfo().getJettyVersion() ) ) //
                     .map( loadResult -> new RunInformations(
                         loadResult.getServerInfo().getJettyVersion() + ":" + loadResult.getServerInfo().getGitHash(), //
                         loadResult.getCollectorInformations() ) //
