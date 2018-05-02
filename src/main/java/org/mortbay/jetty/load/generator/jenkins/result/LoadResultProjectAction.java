@@ -115,9 +115,9 @@ public class LoadResultProjectAction
 
             Map<String, String> versions = versionsListMap.stream() //
                 // filter out test values
-                .filter( stringStringMap -> !(StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.1") //
-                         || StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.2"))  )
-                .collect( Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get( "doc_count" ) ) ) );
+                .filter( stringStringMap -> !( StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.1" ) //
+                    || StringUtils.equalsIgnoreCase( stringStringMap.get( "key" ), "9.2" ) ) ).collect(
+                    Collectors.toMap( m -> m.get( "key" ), m -> String.valueOf( m.get( "doc_count" ) ) ) );
             return versions;
         }
     }
@@ -161,11 +161,14 @@ public class LoadResultProjectAction
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
-                    .filter( loadResult -> StringUtils.equalsIgnoreCase( originalJettyVersion, loadResult.getServerInfo().getJettyVersion() ) ) //
+                    .filter( loadResult -> StringUtils.equalsIgnoreCase( originalJettyVersion,
+                                                                         loadResult.getServerInfo().getJettyVersion() ) ) //
                     .map( loadResult -> new RunInformations(
                         loadResult.getServerInfo().getJettyVersion() + ":" + loadResult.getServerInfo().getGitHash(), //
                         loadResult.getCollectorInformations() ) //
-                        .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) ) //
+                        .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) //
+                        .estimatedQps( LoadTestResultBuildAction.estimatedQps(
+                            LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) ) ) //
                     .collect( Collectors.toList() );
 
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );

@@ -14,6 +14,8 @@ public class RunInformations
 
     private String timestampStr;
 
+    private int estimatedQps;
+
     public RunInformations( String buildId, CollectorInformations collectorInformations )
     {
         this.buildId = buildId;
@@ -61,4 +63,19 @@ public class RunInformations
         return this;
     }
 
+    public int getEstimatedQps()
+    {
+        return estimatedQps;
+    }
+
+    public void setEstimatedQps( int estimatedQps )
+    {
+        this.estimatedQps = estimatedQps;
+    }
+
+    public RunInformations estimatedQps( int estimatedQps )
+    {
+        this.estimatedQps = estimatedQps;
+        return this;
+    }
 }

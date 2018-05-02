@@ -5,11 +5,19 @@
   <l:layout title="Load Generator">
     <m:import/>
     <l:main-panel>
-      <select id="jettyVersions">
-        <j:forEach var="jettyVersion" items="${it.getJettyVersions()}">
-          <option value="${jettyVersion.key}">${jettyVersion.key}</option>
-        </j:forEach>
-      </select>
+      <div>
+        Jetty Version:
+        <select id="jettyVersions">
+          <j:forEach var="jettyVersion" items="${it.getJettyVersions()}">
+            <option value="${jettyVersion.key}">${jettyVersion.key}</option>
+          </j:forEach>
+        </select>
+      </div>
+      <div>
+        Estimated QPS:
+        <select id="estimatedQpsSelect">
+        </select>
+      </div>
 
       <h2>Global Reponse Time Result</h2>
       <div class="graph-container floating-box-load-result-time" align="right">
@@ -17,10 +25,33 @@
         </div>
         <script type="text/javascript" language="javascript">
           jQueryLoadGenerator.noConflict();
-          function displayGraphVersion(version){
+
+          function updateQpsSelect(qpsValues) {
+
+            var $el = jQueryLoadGenerator("#estimatedQpsSelect");
+            $el.empty(); // remove old options
+            jQueryLoadGenerator.each(qpsValues, function(key,value) {
+              $el.append(jQueryLoadGenerator("<option></option>").attr("value", value).text(value));
+            });
+          }
+
+          function displayGraphVersion(version,estimatedQps){
             jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+version, function (json) {
+              if(!estimatedQps) {
+                //var qpsValues = jQueryLoadGenerator.unique(json, function(data) { return data.estimatedQps; });
+
+                var qpsValues= jQueryLoadGenerator.unique(json.map(function (d) { return d.estimatedQps;}));
+
+                updateQpsSelect(qpsValues);
+                estimatedQps = jQueryLoadGenerator('#estimatedQpsSelect').val();
+              }
+
+              json = jQueryLoadGenerator.grep(json, function( n, i ) {
+                return n.estimatedQps == estimatedQps;
+              });
+
               jQueryLoadGenerator("#load_result_response_time_trend").empty();
-              var grah = Morris.Line({
+              var graph = Morris.Line({
                 element: 'load_result_response_time_trend',
                 data: json,
                 xkey: 'startTimeStamp',
@@ -39,16 +70,21 @@
               hoverCallback: function (index, options, content, row) {
                 return 'jettyVersion: ' + row.jettyVersion + '<br/>'
                 + 'Mean: ' + row.mean + '<br/>'
-                // + 'Value 50: ' + row.value50 + '<br/>'
                 + 'Value 90: ' + row.value90 + '<br/>'
+                + 'Estimated QPS: ' + row.estimatedQps + '<br/>'
                 + ' Timestamp: ' + row.timestampStr;
                 }
               });
             });
           }
+
           jQueryLoadGenerator('#jettyVersions').on('change', function() {
             version = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(version);
+            displayGraphVersion(version,jQueryLoadGenerator('#estimatedQpsSelect').val());
+          })
+          jQueryLoadGenerator('#estimatedQpsSelect').on('change', function() {
+            estimatedQps = jQueryLoadGenerator(this).find(":selected").val();
+            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),estimatedQps);
           })
           version = jQueryLoadGenerator('#jettyVersions').val();
           displayGraphVersion(version);
