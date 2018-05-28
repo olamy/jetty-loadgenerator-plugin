@@ -36,7 +36,7 @@
           }
 
           function displayGraphVersion(version,estimatedQps){
-            jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+version, function (json) {
+            jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+encodeURI(version), function (json) {
               if(!estimatedQps) {
                 //var qpsValues = jQueryLoadGenerator.unique(json, function(data) { return data.estimatedQps; });
 

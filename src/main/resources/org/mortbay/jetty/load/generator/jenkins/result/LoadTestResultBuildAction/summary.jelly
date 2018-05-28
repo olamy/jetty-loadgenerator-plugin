@@ -24,6 +24,7 @@
                 <li>usersPerThread: ${loadConfig.usersPerThread}</li>
                 <li>channelsPerUser: ${loadConfig.channelsPerUser}</li>
                 <li>instanceNumber: ${loadConfig.instanceNumber}</li>
+                <li>runningTime: ${loadConfig.runFor} seconds</li>
               </ul>
             </td>
             <td>

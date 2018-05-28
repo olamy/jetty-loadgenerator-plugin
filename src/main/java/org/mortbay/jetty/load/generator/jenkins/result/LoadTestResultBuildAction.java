@@ -114,19 +114,9 @@ public class LoadTestResultBuildAction
         {
             this.builds = parent.getBuilds();
         }
-        if ( this.loadResults == null && loadResultsJson != null )
+        if ( this.loadResults == null )
         {
-            try
-            {
-                this.loadResults = LoadTestResultPublisher.OBJECT_MAPPER.readValue( this.loadResultsJson,
-                                                                                    new TypeReference<List<LoadResult>>()
-                                                                                    {
-                                                                                    } );
-            }
-            catch ( IOException e )
-            {
-                LOGGER.warn( "ignore error loading json", e );
-            }
+            getLoadResults();
         }
     }
 
