@@ -25,6 +25,7 @@ import hudson.util.RunList;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jetty.client.HttpContentResponse;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
@@ -38,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -143,11 +146,24 @@ public class LoadResultProjectAction
         {
             jettyVersion = StringUtils.substringBeforeLast( jettyVersion, "-SNAPSHOT" );
         }
-        jettyVersion = jettyVersion + "*";
+
+        // in case of 9.4.11-NO-LOGGER-SNAPSHOT still not working with elastic
+        // here we must have only number or . so remove everything else
+
+        StringBuilder versionQuery = new StringBuilder(  );
+        CharacterIterator ci = new StringCharacterIterator( jettyVersion);
+        for( char c = ci.first(); c != CharacterIterator.DONE; c = ci.next()) {
+            if(NumberUtils.isCreatable( Character.toString( c ) ) || c == '.')
+            {
+                versionQuery.append( c );
+            }
+        }
+
+        jettyVersion = versionQuery.toString() + "*";
 
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); InputStream inputStream = this.getClass().getResourceAsStream(
-            "/versionResult.json" ))
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); //
+             InputStream inputStream = this.getClass().getResourceAsStream( "/versionResult.json" ))
         {
             String versionResultQuery = IOUtils.toString( inputStream );
             Map<String, String> map = new HashMap<>( 1 );
@@ -161,7 +177,7 @@ public class LoadResultProjectAction
 
             List<RunInformations> runInformations = //
                 loadResults.stream() //
-                    .filter( loadResult -> StringUtils.equalsIgnoreCase( originalJettyVersion,
+                    .filter( loadResult -> StringUtils.equalsIgnoreCase( originalJettyVersion, //
                                                                          loadResult.getServerInfo().getJettyVersion() ) ) //
                     .map( loadResult -> new RunInformations(
                         loadResult.getServerInfo().getJettyVersion() + ":" + loadResult.getServerInfo().getGitHash(), //
