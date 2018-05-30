@@ -1,6 +1,7 @@
 package org.mortbay.jetty.load.generator.jenkins;
 
 import org.mortbay.jetty.load.generator.listeners.CollectorInformations;
+import org.mortbay.jetty.load.generator.listeners.ServerInfo;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -15,6 +16,8 @@ public class RunInformations
     private String timestampStr;
 
     private int estimatedQps;
+
+    private ServerInfo serverInfo;
 
     public RunInformations( String buildId, CollectorInformations collectorInformations )
     {
@@ -76,6 +79,22 @@ public class RunInformations
     public RunInformations estimatedQps( int estimatedQps )
     {
         this.estimatedQps = estimatedQps;
+        return this;
+    }
+
+    public ServerInfo getServerInfo()
+    {
+        return serverInfo;
+    }
+
+    public void setServerInfo( ServerInfo serverInfo )
+    {
+        this.serverInfo = serverInfo;
+    }
+
+    public RunInformations serverInfo( ServerInfo serverInfo )
+    {
+        this.serverInfo = serverInfo;
         return this;
     }
 }

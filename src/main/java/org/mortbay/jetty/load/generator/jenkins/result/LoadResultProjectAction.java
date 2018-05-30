@@ -202,7 +202,8 @@ public class LoadResultProjectAction
                         loadResult.getCollectorInformations() ) //
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) //
                         .estimatedQps( LoadTestResultBuildAction.estimatedQps(
-                            LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) ) ) //
+                            LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) ) //
+                        .serverInfo( loadResult.getServerInfo() )) //
                     .collect( Collectors.toList() );
 
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
