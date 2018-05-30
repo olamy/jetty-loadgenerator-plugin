@@ -132,6 +132,25 @@ public class LoadResultProjectAction
         LOGGER.debug( "doResponseTimeTrend" );
 
         String jettyVersion = req.getParameter( "jettyVersion" );
+        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+        try {
+
+            List<RunInformations> runInformations = searchRunInformations( jettyVersion, elasticHost );
+
+            Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
+            LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
+        }
+        catch ( Exception e )
+        {
+            LOGGER.error( e.getMessage(), e );
+        }
+
+
+    }
+
+    public static List<RunInformations> searchRunInformations(String jettyVersion, ElasticHost elasticHost)
+    throws IOException {
+
         String originalJettyVersion = jettyVersion;
 
         // jettyVersion 9.4.9*
@@ -161,9 +180,8 @@ public class LoadResultProjectAction
 
         jettyVersion = versionQuery.toString() + "*";
 
-        ElasticHost elasticHost = ElasticHost.get( elasticHostName );
         try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); //
-             InputStream inputStream = this.getClass().getResourceAsStream( "/versionResult.json" ))
+             InputStream inputStream = LoadResultProjectAction.class.getResourceAsStream( "/versionResult.json" ))
         {
             String versionResultQuery = IOUtils.toString( inputStream );
             Map<String, String> map = new HashMap<>( 1 );
@@ -188,15 +206,11 @@ public class LoadResultProjectAction
                     .collect( Collectors.toList() );
 
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
-            LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
+            return runInformations;
         }
-        catch ( Exception e )
-        {
-            LOGGER.error( e.getMessage(), e );
-        }
-
 
     }
+
 
     @Override
     public String getDisplayName()
