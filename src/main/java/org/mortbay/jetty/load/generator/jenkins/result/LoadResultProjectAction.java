@@ -149,6 +149,11 @@ public class LoadResultProjectAction
     }
 
     public static List<RunInformations> searchRunInformations(String jettyVersion, ElasticHost elasticHost)
+        throws IOException {
+        return searchRunInformations( jettyVersion, elasticHost, 100 );
+    }
+
+    public static List<RunInformations> searchRunInformations(String jettyVersion, ElasticHost elasticHost, int maxResult)
     throws IOException {
 
         String originalJettyVersion = jettyVersion;
@@ -186,6 +191,7 @@ public class LoadResultProjectAction
             String versionResultQuery = IOUtils.toString( inputStream );
             Map<String, String> map = new HashMap<>( 1 );
             map.put( "jettyVersion", jettyVersion );
+            map.put( "maxResult", Integer.toString( maxResult ) );
             versionResultQuery = StrSubstitutor.replace( versionResultQuery, map );
 
             String results = elasticResultStore.search( versionResultQuery );

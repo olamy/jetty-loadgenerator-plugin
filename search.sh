@@ -4,7 +4,7 @@ curl -s -XGET 'localhost:9200/loadresult/result/_search?pretty' -H 'Content-Type
         "constant_score" : {
             "filter" : {
                 "term" : {
-                    "externalId" : "98"
+                    "externalId" : "341"
                 }
             }
         }

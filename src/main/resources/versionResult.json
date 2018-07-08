@@ -1,5 +1,5 @@
 {
-  "size" : 100,
+  "size" : ${maxResult},
   "query": {
     "wildcard" : { "serverInfo.jettyVersion" : "${jettyVersion}" }
   }
