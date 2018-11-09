@@ -1,10 +1,11 @@
-curl -s -XPUT 'localhost:9200/loadresult/_mapping/result?pretty&update_all_types' -H 'Content-Type: application/json'  -d'
+curl -s -XGET 'localhost:9200/loadresult/result/_search?pretty' -H 'Content-Type: application/json'  -d'
 {
-  "properties": {
-    "serverInfo.jettyVersion": {
-      "type":     "text",
-      "fielddata": true
+  "aggregations" : {
+    "version" : {
+      "terms" : {
+        "field" : "serverInfo.jettyVersion.keyword",
+        "size" : 300
+      }
     }
   }
-}
-'
+}'

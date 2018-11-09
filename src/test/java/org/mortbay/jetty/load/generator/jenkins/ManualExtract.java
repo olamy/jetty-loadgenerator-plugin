@@ -21,11 +21,16 @@ public class ManualExtract
     {
         ElasticHost elasticHost = //
             new ElasticHost( "extract", "localhost", "http", null, null, 9200 );
-        long sinceWhen = new Date().getTime() - ( 1000 * 60 * 60 * 24 * 5 );
+
+        Map<String, String> versions = LoadResultProjectAction.getJettyVersions( elasticHost );
+
+        System.out.println( "versions " + versions );
+
+        long sinceWhen = new Date().getTime() - ( 1000 * 60 * 60 * 24 * 20 );
         //printVersionStats( "9.4.11.v20180605", elasticHost, sinceWhen );
-        printVersionStats( "9.4.12-SNAPSHOT", elasticHost, sinceWhen ); // "9.4.11.v20180605"
-        printVersionStats( "9.4.12-NO-LOGGER-SNAPSHOT", elasticHost, sinceWhen );
-        printVersionStats( "9.4.12-LOGGER-DEBUG-DISABLED-SNAPSHOT", elasticHost, sinceWhen );
+        printVersionStats( "9.4.12.v20180830", elasticHost, sinceWhen ); // "9.4.11.v20180605" // 9.4.12.v20180830
+        //printVersionStats( "9.4.12-NO-LOGGER-SNAPSHOT", elasticHost, sinceWhen );
+        //printVersionStats( "9.4.12-LOGGER-DEBUG-DISABLED-SNAPSHOT", elasticHost, sinceWhen );
     }
 
 
@@ -50,8 +55,8 @@ public class ManualExtract
                 int qps = qpsRunsList.getKey();
                 List<RunInformations> runInformationsList = qpsRunsList.getValue();
                 // display only significant results
-                if ( runInformationsList.size() > 5 && Arrays.asList(27000, 45000).contains( qps ) )
-                {
+                //if ( runInformationsList.size() > 5 ) // && Arrays.asList(27900, 45000).contains( qps ) )
+                //{
                     runInformations.sort( Comparator.comparing( RunInformations::getEndTimeStamp ).reversed() );
                     SummaryStatistics statsMean = new SummaryStatistics();
                     SummaryStatistics statsValue90 = new SummaryStatistics();
@@ -71,11 +76,11 @@ public class ManualExtract
                                             + ", value50 mean: " + String.format( "%.3f", statsValue50.getMean() ) //
                                             + ", value90 mean: " + String.format( "%.3f", statsValue90.getMean() ) //
                                             + ", runs: " + runInformationsList.size() );
-                }
-                else
-                {
-                    //System.out.println( "ignore qps:" + qps );
-                }
+//                }
+//                else
+//                {
+//                    //System.out.println( "ignore qps:" + qps );
+//                }
             } );
 
     }
@@ -85,7 +90,7 @@ public class ManualExtract
                                                               long sinceTimestamp, int buildNumber )
         throws Exception
     {
-        List<RunInformations> runInformations = LoadResultProjectAction.searchRunInformations(version, elasticHost, 100);
+        List<RunInformations> runInformations = LoadResultProjectAction.searchRunInformations(version, elasticHost, 300);
 
         List<RunInformations> sinceList = //
             runInformations.stream().filter( runInformation -> runInformation.getEndTimeStamp() > sinceTimestamp ) //

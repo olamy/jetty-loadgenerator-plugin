@@ -32,7 +32,6 @@ import org.mortbay.jetty.load.generator.store.ElasticResultStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -150,9 +149,8 @@ public class LoadTestResultBuildAction
     public List<LoadResult> getLoadResultsOrderByEstimatedQps()
     {
         return loadResults.stream() //
-            .sorted(
-                Comparator.comparingInt( value -> estimatedQps( getLoaderConfig( (LoadResult) value ) ) ) ).collect(
-                Collectors.toList() );
+            .sorted( Comparator.comparingInt( value -> estimatedQps( getLoaderConfig( (LoadResult) value ) ) ) ) //
+            .collect( Collectors.toList() );
     }
 
     public static int estimatedQps( LoadConfig loadConfig )

@@ -5,7 +5,7 @@
     <j:forEach var="loadResult" items="${it.getLoadResultsOrderByEstimatedQps()}">
       <j:set var="loadConfig" value="${it.getLoaderConfig(loadResult)}"/>
       <div>
-        Jetty Version: ${loadResult.serverInfo.jettyVersion} Theoretical Qps ${it.estimatedQps(loadConfig)}<br/>
+        Jetty Version: ${loadResult.serverInfo.jettyVersion}, Transport: ${loadResult.transport}, Theoretical Qps ${it.estimatedQps(loadConfig)}<br/>
         <table>
           <tr>
             <td>

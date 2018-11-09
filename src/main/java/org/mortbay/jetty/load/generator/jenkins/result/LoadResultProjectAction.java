@@ -106,8 +106,16 @@ public class LoadResultProjectAction
         LOGGER.debug( "getJettyVersions" );
 
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); InputStream inputStream = this.getClass().getResourceAsStream(
-            "/distinctJettyVersion.json" ))
+        return getJettyVersions( elasticHost );
+    }
+
+    public static Map<String, String> getJettyVersions( ElasticHost elasticHost )
+        throws IOException
+    {
+        LOGGER.debug( "getJettyVersions" );
+
+        try (ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore(); //
+             InputStream inputStream = LoadResultProjectAction.class.getResourceAsStream( "/distinctJettyVersion.json" ))
         {
             String distinctSearchQuery = IOUtils.toString( inputStream );
 
@@ -133,7 +141,8 @@ public class LoadResultProjectAction
 
         String jettyVersion = req.getParameter( "jettyVersion" );
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
-        try {
+        try
+        {
 
             List<RunInformations> runInformations = searchRunInformations( jettyVersion, elasticHost );
 
@@ -148,13 +157,16 @@ public class LoadResultProjectAction
 
     }
 
-    public static List<RunInformations> searchRunInformations(String jettyVersion, ElasticHost elasticHost)
-        throws IOException {
+    public static List<RunInformations> searchRunInformations( String jettyVersion, ElasticHost elasticHost )
+        throws IOException
+    {
         return searchRunInformations( jettyVersion, elasticHost, 100 );
     }
 
-    public static List<RunInformations> searchRunInformations(String jettyVersion, ElasticHost elasticHost, int maxResult)
-    throws IOException {
+    public static List<RunInformations> searchRunInformations( String jettyVersion, ElasticHost elasticHost,
+                                                               int maxResult )
+        throws IOException
+    {
 
         String originalJettyVersion = jettyVersion;
 
@@ -174,10 +186,11 @@ public class LoadResultProjectAction
         // in case of 9.4.11-NO-LOGGER-SNAPSHOT still not working with elastic
         // here we must have only number or . so remove everything else
 
-        StringBuilder versionQuery = new StringBuilder(  );
-        CharacterIterator ci = new StringCharacterIterator( jettyVersion);
-        for( char c = ci.first(); c != CharacterIterator.DONE; c = ci.next()) {
-            if(NumberUtils.isCreatable( Character.toString( c ) ) || c == '.')
+        StringBuilder versionQuery = new StringBuilder();
+        CharacterIterator ci = new StringCharacterIterator( jettyVersion );
+        for ( char c = ci.first(); c != CharacterIterator.DONE; c = ci.next() )
+        {
+            if ( NumberUtils.isCreatable( Character.toString( c ) ) || c == '.' )
             {
                 versionQuery.append( c );
             }
@@ -209,7 +222,7 @@ public class LoadResultProjectAction
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) //
                         .estimatedQps( LoadTestResultBuildAction.estimatedQps(
                             LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) ) //
-                        .serverInfo( loadResult.getServerInfo() )) //
+                        .serverInfo( loadResult.getServerInfo() ) ) //
                     .collect( Collectors.toList() );
 
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
