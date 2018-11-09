@@ -170,12 +170,14 @@ public class LoadTestResultPublisher
 
         ElasticHost elasticHost = ElasticHostProjectProperty.DESCRIPTOR.getElasticHostByName( elasticHostName );
         ElasticResultStore elasticResultStore = elasticHost.buildElasticResultStore();
-        List<LoadResult> loadResults = elasticResultStore.searchResultsByExternalId( run.getId());//"101" );// run.getId() );
+        List<LoadResult> loadResults = elasticResultStore.searchResultsByExternalId( run.getId());//"547" );// run.getId() );
 
         try
         {
             run.addAction( new LoadTestResultBuildAction( null, run, elasticHostName,
                                                            OBJECT_MAPPER.writeValueAsString( loadResults ) ) );
+            run.setDescription( "Jetty Version " + loadResults.get( 0 ).getServerInfo().getJettyVersion()
+                                    + ", transport " + loadResults.get( 0 ).getTransport() );
         }
         catch ( Exception e )
         {
