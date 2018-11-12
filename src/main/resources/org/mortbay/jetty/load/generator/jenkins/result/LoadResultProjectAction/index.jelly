@@ -35,20 +35,18 @@
             });
           }
 
-          function displayGraphVersion(version,estimatedQps){
+          function displayGraphVersion(version,estimatedQps,updateQpsValues){
             jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+encodeURI(version), function (json) {
-              if(!estimatedQps) {
-                //var qpsValues = jQueryLoadGenerator.unique(json, function(data) { return data.estimatedQps; });
-
-                var qpsValues= jQueryLoadGenerator.unique(json.map(function (d) { return d.estimatedQps;}));
-
+              if(updateQpsValues) {
+                var qpsValues= getUnique(json.map(function (d) {return d.estimatedQps;}));
                 updateQpsSelect(qpsValues);
                 estimatedQps = jQueryLoadGenerator('#estimatedQpsSelect').val();
               }
-
-              json = jQueryLoadGenerator.grep(json, function( n, i ) {
-                return n.estimatedQps == estimatedQps;
-              });
+              if(estimatedQps) {
+                json = jQueryLoadGenerator.grep(json, function( n, i ) {
+                  return n.estimatedQps == estimatedQps;
+                });
+              }
 
               jQueryLoadGenerator("#load_result_response_time_trend").empty();
               var graph = Morris.Line({
@@ -80,14 +78,26 @@
 
           jQueryLoadGenerator('#jettyVersions').on('change', function() {
             version = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(version,jQueryLoadGenerator('#estimatedQpsSelect').val());
+            displayGraphVersion(version,jQueryLoadGenerator('#estimatedQpsSelect').val(),true);
           })
           jQueryLoadGenerator('#estimatedQpsSelect').on('change', function() {
             estimatedQps = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),estimatedQps);
+            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),estimatedQps,false);
           })
           version = jQueryLoadGenerator('#jettyVersions').val();
-          displayGraphVersion(version);
+          displayGraphVersion(version,null,true);
+
+          function getUnique(inputArray) {
+            var outputArray = [];
+
+            for (var i = 0; i &lt; inputArray.length; i++) {
+              if ((jQueryLoadGenerator.inArray(inputArray[i], outputArray)) == -1) {
+                outputArray.push(inputArray[i]);
+              }
+            }
+
+          return outputArray;
+          }
         </script>
       </div>
     </l:main-panel>

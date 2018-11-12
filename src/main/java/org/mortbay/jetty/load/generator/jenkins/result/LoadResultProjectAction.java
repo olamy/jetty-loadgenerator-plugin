@@ -143,9 +143,7 @@ public class LoadResultProjectAction
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
         try
         {
-
             List<RunInformations> runInformations = searchRunInformations( jettyVersion, elasticHost );
-
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
             LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
         }
