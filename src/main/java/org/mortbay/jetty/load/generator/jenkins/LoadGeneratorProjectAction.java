@@ -74,7 +74,8 @@ public class LoadGeneratorProjectAction
                 if ( buildAction.getGlobalResponseTimeInformations() != null )
                 {
                     RunInformations runInformations =
-                        new RunInformations( run.getId(), buildAction.getGlobalResponseTimeInformations() );
+                        new RunInformations( run.getId(), buildAction.getGlobalResponseTimeInformations(),
+                                             buildAction.getTransport() );
                     datas.add( runInformations );
                 }
             }
@@ -109,7 +110,7 @@ public class LoadGeneratorProjectAction
                 if ( buildAction.getGlobalLatencyTimeInformations() != null )
                 {
                     RunInformations runInformations =
-                        new RunInformations( run.getId(), buildAction.getGlobalLatencyTimeInformations() );
+                        new RunInformations( run.getId(), buildAction.getGlobalLatencyTimeInformations(), buildAction.getTransport() );
                     datas.add( runInformations );
                 }
             }

@@ -17,9 +17,11 @@ public class RunInformations
 
     private int estimatedQps;
 
+    private String transport;
+
     private ServerInfo serverInfo;
 
-    public RunInformations( String buildId, CollectorInformations collectorInformations )
+    public RunInformations( String buildId, CollectorInformations collectorInformations, String transport )
     {
         this.buildId = buildId;
         totalCount( collectorInformations.getTotalCount() );
@@ -33,6 +35,7 @@ public class RunInformations
         endTimeStamp( collectorInformations.getEndTimeStamp() );
         timestampStr = new SimpleDateFormat( "dd/MM/yyyy HH:mm:ss" ) //
             .format( new Date( collectorInformations.getStartTimeStamp() ) );
+        this.transport = transport;
     }
 
     public String getTimestampStr()
@@ -96,5 +99,15 @@ public class RunInformations
     {
         this.serverInfo = serverInfo;
         return this;
+    }
+
+    public String getTransport()
+    {
+        return transport;
+    }
+
+    public void setTransport( String transport )
+    {
+        this.transport = transport;
     }
 }

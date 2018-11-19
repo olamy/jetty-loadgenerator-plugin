@@ -69,6 +69,8 @@ public class LoadGeneratorBuildAction
 
     private String buildId;
 
+    private String transport;
+
     private transient RunList<?> builds;
 
     /**
@@ -86,7 +88,7 @@ public class LoadGeneratorBuildAction
                                      CollectorInformations globalLatencyTimeInformations,
                                      Map<String, List<ResponseTimeInfo>> allResponseInfoTimePerPath,
                                      Run<?,?> run,
-                                     Map<String, Object> monitoringResultMap, String xmlStats)
+                                     Map<String, Object> monitoringResultMap, String xmlStats, String transport)
     {
         this.health = health;
         this.summaryReport = summaryReport;
@@ -97,6 +99,7 @@ public class LoadGeneratorBuildAction
         this.buildId = run.getId();
         this.monitoringResultMap = monitoringResultMap;
         this.xmlStats = xmlStats;
+        this.transport = transport;
         for (List<ResponseTimeInfo> responseTimeInfos : allResponseInfoTimePerPath.values() )
         {
             for (ResponseTimeInfo info : responseTimeInfos)
@@ -211,5 +214,8 @@ public class LoadGeneratorBuildAction
         return PluginConstants.URL_NAME;
     }
 
-
+    public String getTransport()
+    {
+        return transport;
+    }
 }

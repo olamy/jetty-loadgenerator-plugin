@@ -549,7 +549,7 @@ public class LoadGeneratorBuilder
                                                          globalSummaryListener.getLatencyTimeHistogram().getIntervalHistogram(),
                                                          //
                                                          TimeUnit.NANOSECONDS, TimeUnit.MILLISECONDS ), //
-                                                     allResponseInfoTimePerPath, run, monitoringResultMap, stats ) );
+                                                     allResponseInfoTimePerPath, run, monitoringResultMap, stats, getTransport().name() ) );
 
         // cleanup
 

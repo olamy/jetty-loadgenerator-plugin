@@ -46,6 +46,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -145,6 +146,7 @@ public class LoadResultProjectAction
         {
             List<RunInformations> runInformations = searchRunInformations( jettyVersion, elasticHost );
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
+            rsp.addHeader( "Content-Type", "application/json" );
             LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
         }
         catch ( Exception e )
@@ -216,7 +218,7 @@ public class LoadResultProjectAction
                                                                          loadResult.getServerInfo().getJettyVersion() ) ) //
                     .map( loadResult -> new RunInformations(
                         loadResult.getServerInfo().getJettyVersion() + ":" + loadResult.getServerInfo().getGitHash(), //
-                        loadResult.getCollectorInformations() ) //
+                        loadResult.getCollectorInformations(), StringUtils.lowerCase(loadResult.getTransport())) //
                         .jettyVersion( loadResult.getServerInfo().getJettyVersion() ) //
                         .estimatedQps( LoadTestResultBuildAction.estimatedQps(
                             LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) ) //
