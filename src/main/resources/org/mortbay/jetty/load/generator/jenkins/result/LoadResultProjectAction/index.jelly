@@ -21,7 +21,7 @@
         </select>
       </div>
       <div>
-        Estimated QPS:
+        Estimated QPS (number of results):
         <select id="estimatedQpsSelect">
         </select>
       </div>
@@ -38,7 +38,7 @@
             var $el = jQueryLoadGenerator("#estimatedQpsSelect");
             $el.empty(); // remove old options
             jQueryLoadGenerator.each(qpsValues, function(key,value) {
-              $el.append(jQueryLoadGenerator("<option></option>").attr("value", value).text(value));
+              $el.append(jQueryLoadGenerator("<option></option>").attr("value", key).text(key+":"+value));
             });
           }
 
@@ -46,7 +46,7 @@
             jQueryLoadGenerator.getJSON("responseTimeTrend?jettyVersion="+encodeURI(version), function (json) {
               if(updateQpsValues) {
                 var qpsValues= getUnique(json.map(function (d) {return d.estimatedQps;}));
-                updateQpsSelect(qpsValues.sort());
+                updateQpsSelect(qpsValues);
                 estimatedQps = jQueryLoadGenerator('#estimatedQpsSelect').val();
               }
               if(estimatedQps) {
@@ -55,7 +55,6 @@
                 });
               }
               if(transport) {
-                console.log("displayGraphVersion transport:"+transport);
                 json = jQueryLoadGenerator.grep(json, function( n, i ) {
                   return n.transport == transport;
                 });
@@ -107,13 +106,17 @@
           displayGraphVersion(version,null,true,'http');
 
           function getUnique(inputArray) {
-            var outputArray = [];
+            var outputMap = {};
             for (var i = 0; i &lt; inputArray.length; i++) {
-              if ((jQueryLoadGenerator.inArray(inputArray[i], outputArray)) == -1) {
-                outputArray.push(inputArray[i]);
+              cur = inputArray[i];
+              num = outputMap[cur];
+              if(num){
+                outputMap[cur]=num+1;
+              } else {
+                outputMap[cur]=1;
               }
             }
-            return outputArray;
+            return outputMap;
           }
         </script>
       </div>
