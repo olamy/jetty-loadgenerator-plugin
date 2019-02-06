@@ -179,7 +179,7 @@ public class LoadTestResultPublisher
             LoadResult loadResult = loadResults.get( 0 );
             run.setDescription( "Jetty Version " + loadResult.getServerInfo().getJettyVersion()
                                     + ", transport " + loadResult.getTransport()
-                                    + ", qps " + LoadTestResultBuildAction.estimatedQps(
+                                    + ", estimated qps " + LoadTestResultBuildAction.estimatedQps(
                     LoadTestResultBuildAction.getLoaderConfig( loadResult ) ));
         }
         catch ( Exception e )
