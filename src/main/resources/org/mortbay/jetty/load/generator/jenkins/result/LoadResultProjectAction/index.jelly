@@ -7,7 +7,7 @@
     <l:main-panel>
       <div>
         Jetty Version:
-        <select id="jettyVersions">
+        <select id="jettyVersions" multiple="multiple">
           <j:forEach var="jettyVersion" items="${it.getJettyVersions()}">
             <option value="${jettyVersion.key}">${jettyVersion.key}</option>
           </j:forEach>
@@ -32,14 +32,23 @@
         </div>
         <script type="text/javascript" language="javascript">
           jQueryLoadGenerator.noConflict();
+          <!--jQueryLoadGenerator("#estimatedQpsSelect").select2({-->
+            <!--theme: "classic"-->
+          <!--});-->
+
+          jQueryLoadGenerator("#jettyVersions").select2({ theme: "classic" });
 
           function updateQpsSelect(qpsValues) {
-
             var $el = jQueryLoadGenerator("#estimatedQpsSelect");
             $el.empty(); // remove old options
+            //jQueryLoadGenerator("#estimatedQpsSelect").val(null).trigger('change');
             jQueryLoadGenerator.each(qpsValues, function(key,value) {
               $el.append(jQueryLoadGenerator("<option></option>").attr("value", key).text(key+":"+value));
+              //jQueryLoadGenerator("#estimatedQpsSelect").append(new Option(key+":"+value, key)).trigger('change');
             });
+            <!--jQueryLoadGenerator("#estimatedQpsSelect").select2({-->
+          <!--theme: "classic"-->
+          <!--});-->
           }
 
           function displayGraphVersion(version,estimatedQps,updateQpsValues,transport){
@@ -59,48 +68,108 @@
                   return n.transport == transport;
                 });
               }
-
               jQueryLoadGenerator("#load_result_response_time_trend").empty();
-              var graph = Morris.Line({
-                element: 'load_result_response_time_trend',
-                data: json,
-                xkey: 'startTimeStamp',
-                ykeys: ['mean','value90'], // ,'maxValue' ,'value50'
-                labels: ['Mean','Value 90'], // , 'Max' ,'Value 50'
-                resize: true,
-                pointSize: 1,
-                parseTime: false,
-                hideHover: 'auto',
-                dateFormat: function(x) {
-                return x;
-              },
-              xLabelFormat: function(x) {
-                return '';// to verbose and non readable Build #' + x.src.buildId;
-              },
-              hoverCallback: function (index, options, content, row) {
-                return 'jettyVersion: ' + row.jettyVersion + '<br/>'
-                + 'Mean: ' + row.mean + '<br/>'
-                + 'Value 90: ' + row.value90 + '<br/>'
-                + 'Estimated QPS: ' + row.estimatedQps + '<br/>'
-                + ' Timestamp: ' + row.timestampStr;
-                }
-              });
+
+              if(version &amp;&amp; (version.indexOf("|")>=0) ) {
+                // rework the data
+                var data = [];
+                var ykeys = [];
+                var labels = [];
+                jQueryLoadGenerator.each(json, function( index, value ) {
+                  var obj = {};
+                  obj["startTimeStamp"] = value.startTimeStamp;
+                  obj["mean_"+value.jettyVersion] = value.mean;
+                  obj["mean"] = value.mean;
+                  obj["jettyVersion"]=value.jettyVersion;
+                  data.push(obj);
+                  //data.push({"startTimeStamp":value.startTimeStamp,"mean_"+value.jettyVersion:value.mean});
+                  var versions = version.split("|");
+                  console.log("versions.length"+versions.length);
+                  for (var i = 0; i &lt; versions.length; i++) {
+                    if(!ykeys.includes("mean_"+versions[i])) {
+                      ykeys.push("mean_"+versions[i]);
+                      labels.push("Mean "+versions[i]);
+                    }
+                  }
+                });
+                var graph = Morris.Line({
+                  element: 'load_result_response_time_trend',
+                  data: data,
+                  xkey: 'startTimeStamp',
+                  ykeys: ykeys,
+                  labels: labels,
+                  resize: true,
+                  pointSize: 1,
+                  parseTime: false,
+                  hideHover: 'auto',
+                  dateFormat: function(x) {
+                    return x;
+                  },
+                  xLabelFormat: function(x) {
+                    return '';// to verbose and non readable Build #' + x.src.buildId;
+                  },
+                  hoverCallback: function (index, options, content, row) {
+                    return 'jettyVersion: ' + row.jettyVersion + '<br/>'
+                    + 'Mean: ' + row.mean + '<br/>'
+                    + 'Estimated QPS: ' + row.estimatedQps + '<br/>'
+                    + ' Timestamp: ' + row.timestampStr;
+                  }
+                });
+
+              } else {
+                var graph = Morris.Line({
+                  element: 'load_result_response_time_trend',
+                  data: json,
+                  xkey: 'startTimeStamp',
+                  ykeys: ['mean'],//,'value90'], // ,'maxValue' ,'value50'
+                  labels: ['Mean'],//,'Value 90'], // , 'Max' ,'Value 50'
+                  resize: true,
+                  pointSize: 1,
+                  parseTime: false,
+                  hideHover: 'auto',
+                  dateFormat: function(x) {
+                    return x;
+                  },
+                  xLabelFormat: function(x) {
+                    return '';// to verbose and non readable Build #' + x.src.buildId;
+                  },
+                  hoverCallback: function (index, options, content, row) {
+                    return 'jettyVersion: ' + row.jettyVersion + '<br/>'
+                    + 'Mean: ' + row.mean + '<br/>'
+                    + 'Value 90: ' + row.value90 + '<br/>'
+                    + 'Estimated QPS: ' + row.estimatedQps + '<br/>'
+                    + ' Timestamp: ' + row.timestampStr;
+                  }
+                });
+              }
             });
           }
 
-          jQueryLoadGenerator('#jettyVersions').on('change', function() {
-            version = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(version,jQueryLoadGenerator('#estimatedQpsSelect').val(),true,jQueryLoadGenerator('#transport').val());
-          })
+          <!--jQueryLoadGenerator('#jettyVersions').on('change', function() {-->
+            <!--version = jQueryLoadGenerator(this).find(":selected").val();-->
+            <!--displayGraphVersion(version,jQueryLoadGenerator('#estimatedQpsSelect').val(),true,jQueryLoadGenerator('#transport').val());-->
+          <!--})-->
           jQueryLoadGenerator('#estimatedQpsSelect').on('change', function() {
             estimatedQps = jQueryLoadGenerator(this).find(":selected").val();
             displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),estimatedQps,false,jQueryLoadGenerator('#transport').val());
           })
           jQueryLoadGenerator('#transport').on('change', function() {
             transport = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),jQueryLoadGenerator('#estimatedQpsSelect').val()
-                                ,false,transport);
+            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),jQueryLoadGenerator('#estimatedQpsSelect').val(),false,transport);
           })
+
+          jQueryLoadGenerator('#jettyVersions').on('select2:select', function (e) {
+            var data = jQueryLoadGenerator('#jettyVersions').select2('data');
+            if(data.length>1){
+              var versions='';
+              jQueryLoadGenerator.each(data, function(index,value) {
+                versions = versions + value.id + "|";
+              });
+              displayGraphVersion(versions,jQueryLoadGenerator('#estimatedQpsSelect').val(),true,jQueryLoadGenerator('#transport').val());
+            } else {
+              displayGraphVersion(data[0].id,jQueryLoadGenerator('#estimatedQpsSelect').val(),true,jQueryLoadGenerator('#transport').val());
+            }
+          });
 
           version = jQueryLoadGenerator('#jettyVersions').val();
           displayGraphVersion(version,null,true,'http');

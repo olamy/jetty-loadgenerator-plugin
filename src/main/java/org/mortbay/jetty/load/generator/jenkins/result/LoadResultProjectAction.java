@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -141,10 +142,15 @@ public class LoadResultProjectAction
         LOGGER.debug( "doResponseTimeTrend" );
 
         String jettyVersion = req.getParameter( "jettyVersion" );
+        String[] versions = StringUtils.split(jettyVersion, '|');
         ElasticHost elasticHost = ElasticHost.get( elasticHostName );
+
         try
         {
-            List<RunInformations> runInformations = searchRunInformations( jettyVersion, elasticHost );
+            List<RunInformations> runInformations = new ArrayList<>();
+            for (String version:versions){
+                runInformations.addAll(searchRunInformations( version, elasticHost ));
+            }
             Collections.sort( runInformations, Comparator.comparing( o -> o.getStartTimeStamp() ) );
             rsp.addHeader( "Content-Type", "application/json" );
             LoadTestResultPublisher.OBJECT_MAPPER.writeValue( rsp.getWriter(), runInformations );
@@ -153,8 +159,6 @@ public class LoadResultProjectAction
         {
             LOGGER.error( e.getMessage(), e );
         }
-
-
     }
 
     public static List<RunInformations> searchRunInformations( String jettyVersion, ElasticHost elasticHost )

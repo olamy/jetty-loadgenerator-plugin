@@ -176,11 +176,13 @@ public class LoadTestResultPublisher
         {
             run.addAction( new LoadTestResultBuildAction( null, run, elasticHostName,
                                                            OBJECT_MAPPER.writeValueAsString( loadResults ) ) );
-            LoadResult loadResult = loadResults.get( 0 );
-            run.setDescription( "Jetty Version " + loadResult.getServerInfo().getJettyVersion()
-                                    + ", transport " + loadResult.getTransport()
-                                    + ", estimated qps " + LoadTestResultBuildAction.estimatedQps(
-                    LoadTestResultBuildAction.getLoaderConfig( loadResult ) ));
+            if(!loadResults.isEmpty())
+            {
+                LoadResult loadResult = loadResults.get( 0 );
+                run.setDescription( "Jetty Version " + loadResult.getServerInfo().getJettyVersion() //
+                                        + ", transport " + loadResult.getTransport() //
+                                        + ", estimated qps " + LoadTestResultBuildAction.estimatedQps(LoadTestResultBuildAction.getLoaderConfig( loadResult ) ) );
+            }
         }
         catch ( Exception e )
         {
