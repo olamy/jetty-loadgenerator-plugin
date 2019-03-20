@@ -82,7 +82,6 @@
                   obj["mean"] = value.mean;
                   obj["jettyVersion"]=value.jettyVersion;
                   data.push(obj);
-                  //data.push({"startTimeStamp":value.startTimeStamp,"mean_"+value.jettyVersion:value.mean});
                   var versions = version.split("|");
                   console.log("versions.length"+versions.length);
                   for (var i = 0; i &lt; versions.length; i++) {
@@ -121,8 +120,8 @@
                   element: 'load_result_response_time_trend',
                   data: json,
                   xkey: 'startTimeStamp',
-                  ykeys: ['mean'],//,'value90'], // ,'maxValue' ,'value50'
-                  labels: ['Mean'],//,'Value 90'], // , 'Max' ,'Value 50'
+                  ykeys: ['mean','value90'], // ,'maxValue' ,'value50'
+                  labels: ['Mean','Value 90'], // , 'Max' ,'Value 50'
                   resize: true,
                   pointSize: 1,
                   parseTime: false,
@@ -151,7 +150,13 @@
           <!--})-->
           jQueryLoadGenerator('#estimatedQpsSelect').on('change', function() {
             estimatedQps = jQueryLoadGenerator(this).find(":selected").val();
-            displayGraphVersion(jQueryLoadGenerator('#jettyVersions').val(),estimatedQps,false,jQueryLoadGenerator('#transport').val());
+            versionsSelected = jQueryLoadGenerator('#jettyVersions').val();//.replace(",","|");
+            var versions='';
+            jQueryLoadGenerator.each(versionsSelected, function(index,value) {
+              versions = versions + value + "|";
+            });
+            console.log("estimatedQpsSelect :" + estimatedQps + ",versions:" + versions);
+            displayGraphVersion(versions,estimatedQps,false,jQueryLoadGenerator('#transport').val());
           })
           jQueryLoadGenerator('#transport').on('change', function() {
             transport = jQueryLoadGenerator(this).find(":selected").val();
@@ -159,7 +164,16 @@
           })
 
           jQueryLoadGenerator('#jettyVersions').on('select2:select', function (e) {
+            applyVersionsChanged();
+          });
+
+          jQueryLoadGenerator('#jettyVersions').on('select2:unselect', function (e) {
+            applyVersionsChanged();
+          });
+
+          function applyVersionsChanged() {
             var data = jQueryLoadGenerator('#jettyVersions').select2('data');
+            console.log("versions changed");
             if(data.length>1){
               var versions='';
               jQueryLoadGenerator.each(data, function(index,value) {
@@ -169,7 +183,7 @@
             } else {
               displayGraphVersion(data[0].id,jQueryLoadGenerator('#estimatedQpsSelect').val(),true,jQueryLoadGenerator('#transport').val());
             }
-          });
+          }
 
           version = jQueryLoadGenerator('#jettyVersions').val();
           displayGraphVersion(version,null,true,'http');
