@@ -23,7 +23,7 @@
     <java.level>8</java.level>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <jackson2-version>2.11.3</jackson2-version>
-    <jetty.version>9.4.34.v20201102</jetty.version>
+    <jetty.version>9.4.35.v20201120</jetty.version>
     <loadgenerator.debugPort>-1</loadgenerator.debugPort>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
     <loadgenerator.version>1.0.0-SNAPSHOT</loadgenerator.version>
