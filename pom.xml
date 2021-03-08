@@ -200,7 +200,7 @@
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
-      <version>1.80</version>
+      <version>1.81</version>
       <scope>test</scope>
     </dependency>
 
